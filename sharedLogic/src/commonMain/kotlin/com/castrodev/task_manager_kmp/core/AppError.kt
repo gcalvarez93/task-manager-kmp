@@ -11,5 +11,9 @@ sealed interface AppError {
     data class Validation(val message: String) : AppError
     data class Network(val message: String) : AppError
     data class Server(val statusCode: Int, val message: String) : AppError
+
+    /** La respuesta del servidor llego, pero su contenido no es valido (estado desconocido, fecha mal formada...). */
+    data class InvalidData(val message: String) : AppError
+
     data class Unknown(val message: String) : AppError
 }

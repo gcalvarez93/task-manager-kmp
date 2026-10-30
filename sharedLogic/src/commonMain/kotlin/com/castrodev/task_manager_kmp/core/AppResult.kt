@@ -15,6 +15,12 @@ inline fun <T, R> AppResult<T>.map(transform: (T) -> R): AppResult<R> = when (th
     is AppResult.Failure -> this
 }
 
+/** Como [map], pero la transformacion tambien puede fallar. */
+inline fun <T, R> AppResult<T>.flatMap(transform: (T) -> AppResult<R>): AppResult<R> = when (this) {
+    is AppResult.Success -> transform(value)
+    is AppResult.Failure -> this
+}
+
 inline fun <T, R> AppResult<T>.fold(
     onSuccess: (T) -> R,
     onFailure: (AppError) -> R,

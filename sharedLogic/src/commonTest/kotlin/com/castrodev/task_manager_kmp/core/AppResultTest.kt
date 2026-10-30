@@ -26,6 +26,38 @@ class AppResultTest {
     }
 
     @Test
+    fun `flatMap returns the result of the transformation for a success`() {
+        val result: AppResult<Int> = AppResult.Success(2)
+
+        val mapped = result.flatMap { AppResult.Success(it.toString()) }
+
+        assertEquals(AppResult.Success("2"), mapped)
+    }
+
+    @Test
+    fun `flatMap propagates the error of the transformation`() {
+        val result: AppResult<Int> = AppResult.Success(2)
+
+        val mapped = result.flatMap<Int, String> { AppResult.Failure(AppError.NotFound) }
+
+        assertEquals(AppResult.Failure(AppError.NotFound), mapped)
+    }
+
+    @Test
+    fun `flatMap keeps the error of a failure without calling the transformation`() {
+        val result: AppResult<Int> = AppResult.Failure(AppError.Unauthorized)
+        var called = false
+
+        val mapped = result.flatMap {
+            called = true
+            AppResult.Success(it)
+        }
+
+        assertEquals(AppResult.Failure(AppError.Unauthorized), mapped)
+        assertEquals(false, called)
+    }
+
+    @Test
     fun `fold calls onSuccess for a success`() {
         val result: AppResult<Int> = AppResult.Success(5)
 

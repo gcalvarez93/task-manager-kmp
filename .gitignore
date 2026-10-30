@@ -1,0 +1,33 @@
+# Gradle / Kotlin
+build/
+.gradle/
+.kotlin/
+*.iml
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# iOS / Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+Pods/
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+
+# macOS
+.DS_Store

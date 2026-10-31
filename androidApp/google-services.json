@@ -1,0 +1,190 @@
+{
+  "project_info": {
+    "project_number": "647694841688",
+    "project_id": "castrodev-d3e1f",
+    "storage_bucket": "castrodev-d3e1f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:647694841688:android:335d9e693da64d5de1d72d",
+        "android_client_info": {
+          "package_name": "com.castrodev.finance_tracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "647694841688-5u9b89na24jnnpav7o1cfecqlfqn4t2p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2_5DfhGsG9U-VL4vfCXM4ox_S_nQubZE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "647694841688-5u9b89na24jnnpav7o1cfecqlfqn4t2p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "647694841688-2a03etaaim2vh6r5ht28a6t6onqh21vc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.castrodev.TaskManager"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:647694841688:android:7c8cc13c3af17171e1d72d",
+        "android_client_info": {
+          "package_name": "com.castrodev.habit_tracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "647694841688-5u9b89na24jnnpav7o1cfecqlfqn4t2p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2_5DfhGsG9U-VL4vfCXM4ox_S_nQubZE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "647694841688-5u9b89na24jnnpav7o1cfecqlfqn4t2p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "647694841688-2a03etaaim2vh6r5ht28a6t6onqh21vc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.castrodev.TaskManager"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:647694841688:android:3246eb4085f731b6e1d72d",
+        "android_client_info": {
+          "package_name": "com.castrodev.recipemanager"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "647694841688-5u9b89na24jnnpav7o1cfecqlfqn4t2p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2_5DfhGsG9U-VL4vfCXM4ox_S_nQubZE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "647694841688-5u9b89na24jnnpav7o1cfecqlfqn4t2p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "647694841688-2a03etaaim2vh6r5ht28a6t6onqh21vc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.castrodev.TaskManager"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:647694841688:android:8d9368fad307d9bde1d72d",
+        "android_client_info": {
+          "package_name": "com.castrodev.task_manager_kmp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "647694841688-5u9b89na24jnnpav7o1cfecqlfqn4t2p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2_5DfhGsG9U-VL4vfCXM4ox_S_nQubZE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "647694841688-5u9b89na24jnnpav7o1cfecqlfqn4t2p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "647694841688-2a03etaaim2vh6r5ht28a6t6onqh21vc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.castrodev.TaskManager"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:647694841688:android:3aa8b8d2a2bac30be1d72d",
+        "android_client_info": {
+          "package_name": "com.castrodev.workouttracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "647694841688-5u9b89na24jnnpav7o1cfecqlfqn4t2p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2_5DfhGsG9U-VL4vfCXM4ox_S_nQubZE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "647694841688-5u9b89na24jnnpav7o1cfecqlfqn4t2p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "647694841688-2a03etaaim2vh6r5ht28a6t6onqh21vc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.castrodev.TaskManager"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

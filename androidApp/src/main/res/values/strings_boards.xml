@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="boards_title">Tableros</string>
+    <string name="boards_sign_out">Cerrar sesión</string>
+    <string name="boards_empty">Aún no tienes tableros. Crea el primero con el botón +</string>
+    <string name="boards_create_title">Nuevo tablero</string>
+    <string name="boards_name_label">Nombre</string>
+    <string name="boards_color_label">Color</string>
+    <string name="boards_delete_title">Eliminar tablero</string>
+    <string name="boards_delete_message">Se eliminará el tablero «%1$s». Esta acción no se puede deshacer.</string>
+    <plurals name="boards_task_count">
+        <item quantity="one">%1$d tarea</item>
+        <item quantity="other">%1$d tareas</item>
+    </plurals>
+
+    <string name="tasks_back">Volver</string>
+    <string name="tasks_empty">No hay tareas para mostrar</string>
+    <string name="tasks_filter_all">Todas</string>
+    <string name="tasks_create_title">Nueva tarea</string>
+    <string name="tasks_title_label">Título</string>
+    <string name="tasks_priority_label">Prioridad</string>
+    <string name="tasks_status_label">Estado</string>
+    <string name="tasks_delete_title">Eliminar tarea</string>
+    <string name="tasks_delete_message">Se eliminará la tarea «%1$s». Esta acción no se puede deshacer.</string>
+    <string name="status_pending">Pendiente</string>
+    <string name="status_in_progress">En curso</string>
+    <string name="status_done">Hecha</string>
+    <string name="priority_low">Baja</string>
+    <string name="priority_medium">Media</string>
+    <string name="priority_high">Alta</string>
+
+    <string name="action_create">Crear</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_add">Añadir</string>
+
+    <string name="error_unauthorized">Tu sesión ha caducado. Cierra sesión y vuelve a entrar</string>
+    <string name="error_not_found">No se ha encontrado el elemento</string>
+    <string name="error_network">Sin conexión. Comprueba tu red e inténtalo de nuevo</string>
+    <string name="error_generic">Algo ha fallado. Inténtalo de nuevo</string>
+</resources>

@@ -5,40 +5,20 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import com.castrodev.task_manager_kmp.ui.navigation.AppNavHost
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        val container = (application as TaskManagerApp).container
+
         setContent {
             MaterialTheme {
-                PlaceholderScreen()
+                AppNavHost(container = container)
             }
         }
-    }
-}
-
-/** Pantalla provisional hasta que lleguen el login y la lista de tareas. */
-@Composable
-private fun PlaceholderScreen() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Task Manager KMP")
-    }
-}
-
-@Preview
-@Composable
-private fun PlaceholderScreenPreview() {
-    MaterialTheme {
-        PlaceholderScreen()
     }
 }

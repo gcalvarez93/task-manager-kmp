@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="login_title">Iniciar sesión</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Contraseña</string>
+    <string name="login_submit">Entrar</string>
+    <string name="login_error_email_empty">Escribe tu email</string>
+    <string name="login_error_email_invalid">El email no es válido</string>
+    <string name="login_error_password_empty">Escribe tu contraseña</string>
+    <string name="login_error_credentials">Email o contraseña incorrectos</string>
+    <string name="login_error_network">Sin conexión. Comprueba tu red e inténtalo de nuevo</string>
+    <string name="login_error_generic">No se ha podido iniciar sesión. Inténtalo de nuevo</string>
+    <string name="tasks_title">Tareas</string>
+    <string name="tasks_signed_in">Sesión iniciada</string>
+    <string name="tasks_sign_out">Cerrar sesión</string>
+</resources>

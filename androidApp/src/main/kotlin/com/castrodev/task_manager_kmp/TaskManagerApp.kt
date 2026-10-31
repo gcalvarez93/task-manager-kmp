@@ -11,9 +11,11 @@ import com.google.firebase.auth.FirebaseAuth
 class TaskManagerApp : Application() {
 
     val container: AppContainer by lazy {
+        val firebaseAuth = FirebaseAuth.getInstance()
         AppContainer(
             baseUrl = BuildConfig.API_BASE_URL,
-            tokenProvider = FirebaseTokenProvider(FirebaseAuth.getInstance()),
+            tokenProvider = FirebaseTokenProvider(firebaseAuth),
+            authRepository = FirebaseAuthRepository(firebaseAuth),
         )
     }
 }

@@ -1,5 +1,4 @@
 // Path: sharedLogic/src/commonMain/kotlin/com/castrodev/task_manager_kmp/AppContainer.kt
-// Path: sharedLogic/src/commonMain/kotlin/com/castrodev/task_manager_kmp/AppContainer.kt
 package com.castrodev.task_manager_kmp
 
 import com.castrodev.task_manager_kmp.data.DataModule
@@ -7,8 +6,10 @@ import com.castrodev.task_manager_kmp.data.remote.TokenProvider
 import com.castrodev.task_manager_kmp.domain.repository.AuthRepository
 import com.castrodev.task_manager_kmp.domain.repository.BoardRepository
 import com.castrodev.task_manager_kmp.domain.repository.TaskRepository
+import com.castrodev.task_manager_kmp.domain.usecase.CreateBoardUseCase
 import com.castrodev.task_manager_kmp.domain.usecase.CreateTaskUseCase
 import com.castrodev.task_manager_kmp.domain.usecase.FilterTasksUseCase
+import com.castrodev.task_manager_kmp.presentation.boards.BoardListStore
 import com.castrodev.task_manager_kmp.presentation.login.LoginStore
 import com.castrodev.task_manager_kmp.presentation.tasks.TaskListStore
 import kotlinx.coroutines.CoroutineScope
@@ -38,6 +39,14 @@ class AppContainer(
     /** Crea el store del login. */
     fun createLoginStore(scope: CoroutineScope): LoginStore =
         LoginStore(authRepository = authRepository, scope = scope)
+
+    /** Crea el store de la lista de tableros. */
+    fun createBoardListStore(scope: CoroutineScope): BoardListStore =
+        BoardListStore(
+            repository = boards,
+            createBoardUseCase = CreateBoardUseCase(boards),
+            scope = scope,
+        )
 
     /**
      * Crea el store de la lista de tareas.

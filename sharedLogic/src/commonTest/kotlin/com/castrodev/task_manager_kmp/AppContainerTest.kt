@@ -2,6 +2,7 @@
 package com.castrodev.task_manager_kmp
 
 import com.castrodev.task_manager_kmp.data.remote.FakeTokenProvider
+import com.castrodev.task_manager_kmp.presentation.boards.BoardListState
 import com.castrodev.task_manager_kmp.presentation.login.LoginState
 import com.castrodev.task_manager_kmp.presentation.tasks.TaskListState
 import com.castrodev.task_manager_kmp.testing.FakeAuthRepository
@@ -29,5 +30,12 @@ class AppContainerTest {
 
         assertEquals(LoginState(isSignedIn = true), store.state.value)
         assertTrue(store.state.value.isSignedIn)
+    }
+
+    @Test
+    fun `container creates a board list store with an empty initial state`() = runTest {
+        val store = container().createBoardListStore(backgroundScope)
+
+        assertEquals(BoardListState(), store.state.value)
     }
 }

@@ -15,6 +15,7 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "SharedLogic"
             isStatic = true
+            binaryOption("bundleId", "com.castrodev.taskmanagerkmp.sharedlogic")
         }
     }
     android {

@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		B6F6A97E30962BB60000D6E0 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = B6F6A97D30962BB60000D6E0 /* FirebaseAuth */; };
+		B6F6A98130962EF20000D6E0 /* InMemoryLogging in Frameworks */ = {isa = PBXBuildFile; productRef = B6F6A98030962EF20000D6E0 /* InMemoryLogging */; };
+		B6F6A98330962EF20000D6E0 /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = B6F6A98230962EF20000D6E0 /* Logging */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -15,7 +17,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		3F89269B9523641D8D3E1E47 /* Exceptions for "iosApp" folder in "iosApp" target */ = {
+		3F89269B9523641D8D3E1E47 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -28,13 +30,21 @@
 		529A2475B606E52B9E74BC6D /* iosApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				3F89269B9523641D8D3E1E47 /* Exceptions for "iosApp" folder in "iosApp" target */,
+				3F89269B9523641D8D3E1E47 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
 			);
 			path = iosApp;
 			sourceTree = "<group>";
 		};
 		C76D8F46A935B522635D2F13 /* Configuration */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
 			path = Configuration;
 			sourceTree = "<group>";
 		};
@@ -45,6 +55,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B6F6A98330962EF20000D6E0 /* Logging in Frameworks */,
+				B6F6A98130962EF20000D6E0 /* InMemoryLogging in Frameworks */,
 				B6F6A97E30962BB60000D6E0 /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -91,6 +103,8 @@
 			name = iosApp;
 			packageProductDependencies = (
 				B6F6A97D30962BB60000D6E0 /* FirebaseAuth */,
+				B6F6A98030962EF20000D6E0 /* InMemoryLogging */,
+				B6F6A98230962EF20000D6E0 /* Logging */,
 			);
 			productName = iosApp;
 			productReference = 5CFAC8CC1F85D26DF2B2C165 /* TaskManagerKMP.app */;
@@ -122,6 +136,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				B6F6A97C30962BB60000D6E0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				B6F6A97F30962EF20000D6E0 /* XCRemoteSwiftPackageReference "swift-log" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = EC804158623FC80C1C5F4970 /* Products */;
@@ -387,6 +402,14 @@
 				minimumVersion = 13.1.1;
 			};
 		};
+		B6F6A97F30962EF20000D6E0 /* XCRemoteSwiftPackageReference "swift-log" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-log";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.16.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -394,6 +417,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = B6F6A97C30962BB60000D6E0 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
+		};
+		B6F6A98030962EF20000D6E0 /* InMemoryLogging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B6F6A97F30962EF20000D6E0 /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = InMemoryLogging;
+		};
+		B6F6A98230962EF20000D6E0 /* Logging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B6F6A97F30962EF20000D6E0 /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = Logging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

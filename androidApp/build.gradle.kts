@@ -29,6 +29,13 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.kotlinx.coroutines.playServices)
+
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
 }
 
 android {
@@ -65,5 +72,8 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    testOptions {
+        unitTests.all { it.useJUnitPlatform() }
     }
 }

@@ -32,7 +32,7 @@ final class FirebaseAuthRepository: NSObject, AuthRepository, @unchecked Sendabl
         }
     }
 
-    private func map(_ error: Error) -> any AppError {
+    func map(_ error: Error) -> any AppError {
         let nsError = error as NSError
         guard nsError.domain == AuthErrorDomain,
               let code = AuthErrorCode(rawValue: nsError.code) else {

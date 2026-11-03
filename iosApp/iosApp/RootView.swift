@@ -2,7 +2,7 @@
 import SharedLogic
 import SwiftUI
 
-/// Decide qué se ve según haya sesión o no. Arranca en la pantalla principal si ya hay sesión.
+/// Decide qué se ve según haya sesión o no. Arranca en los tableros si ya hay sesión.
 struct RootView: View {
 
     let container: AppContainer
@@ -15,14 +15,9 @@ struct RootView: View {
 
     var body: some View {
         if isSignedIn {
-            // Pantalla provisional hasta que lleguen los tableros y las tareas.
-            VStack(spacing: 16) {
-                Text("Sesión iniciada")
-                    .font(.title2)
-                Button("Cerrar sesión") {
-                    container.authRepository.signOut()
-                    isSignedIn = false
-                }
+            MainFlowView(container: container) {
+                container.authRepository.signOut()
+                isSignedIn = false
             }
         } else {
             LoginView(container: container) {

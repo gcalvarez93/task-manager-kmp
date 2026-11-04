@@ -15,5 +15,11 @@ sealed interface AppError {
     /** La respuesta del servidor llego, pero su contenido no es valido (estado desconocido, fecha mal formada...). */
     data class InvalidData(val message: String) : AppError
 
+    /** El registro ha fallado porque ya existe una cuenta con ese email. */
+    data object EmailAlreadyInUse : AppError
+
+    /** El registro ha fallado porque el proveedor de autenticacion considera debil la contrasena. */
+    data object WeakPassword : AppError
+
     data class Unknown(val message: String) : AppError
 }

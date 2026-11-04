@@ -25,6 +25,14 @@ struct UserMessagesTests {
         #expect(userMessage(for: error) == "Sin conexión. Comprueba tu red e inténtalo de nuevo")
     }
 
+    @Test func emailAlreadyInUseHasItsOwnMessage() {
+        #expect(userMessage(for: AppErrorEmailAlreadyInUse.shared) == "Ya existe una cuenta con ese email")
+    }
+
+    @Test func weakPasswordHasItsOwnMessage() {
+        #expect(userMessage(for: AppErrorWeakPassword.shared) == "La contraseña es demasiado débil")
+    }
+
     @Test func otherErrorsUseTheGenericMessage() {
         let server = AppErrorServer(statusCode: 500, message: "boom")
         let unknown = AppErrorUnknown(message: "???")

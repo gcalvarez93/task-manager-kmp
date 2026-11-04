@@ -83,4 +83,49 @@ struct LoginViewModelTests {
         #expect(viewModel.state.error is AppErrorUnauthorized)
         #expect(viewModel.state.isSignedIn == false)
     }
+
+    // MARK: - Registro
+
+    @Test func toggleModeSwitchesTheScreenToSignUpAndBack() async {
+        let viewModel = makeViewModel(auth: FakeAuthRepository())
+        #expect(viewModel.state.mode == .signIn)
+
+        viewModel.toggleMode()
+        let signUp = await waitUntil { viewModel.state.mode == .signUp }
+        #expect(signUp)
+
+        viewModel.toggleMode()
+        let signIn = await waitUntil { viewModel.state.mode == .signIn }
+        #expect(signIn)
+    }
+
+    @Test func inSignUpModeSubmittingCreatesTheAccountInsteadOfSigningIn() async {
+        let auth = FakeAuthRepository()
+        let viewModel = makeViewModel(auth: auth)
+
+        viewModel.toggleMode()
+        viewModel.onEmailChange("  nuevo@test.com ")
+        viewModel.onPasswordChange("secreto1")
+        viewModel.submit()
+        let signedIn = await waitUntil { viewModel.state.isSignedIn }
+
+        #expect(signedIn)
+        #expect(auth.signUpCalls == [SignInCall(email: "nuevo@test.com", password: "secreto1")])
+        #expect(auth.calls.isEmpty)
+    }
+
+    @Test func signUpWithAShortPasswordShowsTheTooShortErrorWithoutCallingTheRepository() async {
+        let auth = FakeAuthRepository()
+        let viewModel = makeViewModel(auth: auth)
+
+        viewModel.toggleMode()
+        viewModel.onEmailChange("nuevo@test.com")
+        viewModel.onPasswordChange("123")
+        viewModel.submit()
+        let reflected = await waitUntil { viewModel.state.passwordError != nil }
+
+        #expect(reflected)
+        #expect(viewModel.state.passwordError == .tooShort)
+        #expect(auth.signUpCalls.isEmpty)
+    }
 }

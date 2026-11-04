@@ -13,6 +13,10 @@ func userMessage(for error: any AppError) -> String {
         return "No se ha encontrado el elemento"
     case is AppErrorNetwork:
         return "Sin conexión. Comprueba tu red e inténtalo de nuevo"
+    case is AppErrorEmailAlreadyInUse:
+        return "Ya existe una cuenta con ese email"
+    case is AppErrorWeakPassword:
+        return "La contraseña es demasiado débil"
     default:
         return "Algo ha fallado. Inténtalo de nuevo"
     }

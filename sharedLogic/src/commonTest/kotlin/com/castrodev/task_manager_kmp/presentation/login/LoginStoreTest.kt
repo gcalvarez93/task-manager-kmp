@@ -172,4 +172,132 @@ class LoginStoreTest {
 
         assertNull(store.state.value.error)
     }
+
+    // --- Registro ---
+
+    @Test
+    fun `toggleMode switches between sign in and sign up`() = runTest {
+        val store = storeWith(FakeAuthRepository())
+        assertEquals(AuthMode.SIGN_IN, store.state.value.mode)
+
+        store.toggleMode()
+        assertEquals(AuthMode.SIGN_UP, store.state.value.mode)
+
+        store.toggleMode()
+        assertEquals(AuthMode.SIGN_IN, store.state.value.mode)
+    }
+
+    @Test
+    fun `toggleMode keeps what was typed and clears the errors`() = runTest {
+        val auth = FakeAuthRepository().apply { result = AppResult.Failure(AppError.Unauthorized) }
+        val store = storeWith(auth)
+        store.fill()
+        store.submit()
+        runCurrent()
+        assertEquals(AppError.Unauthorized, store.state.value.error)
+
+        store.toggleMode()
+
+        val state = store.state.value
+        assertEquals(AuthMode.SIGN_UP, state.mode)
+        assertEquals("ana@example.com", state.email)
+        assertEquals("secreto", state.password)
+        assertNull(state.error)
+        assertNull(state.emailError)
+        assertNull(state.passwordError)
+    }
+
+    @Test
+    fun `toggleMode is ignored while a request is in progress`() = runTest {
+        val auth = FakeAuthRepository()
+        val gate = CompletableDeferred<Unit>()
+        auth.gate = gate
+        val store = storeWith(auth)
+        store.fill()
+        store.submit()
+        runCurrent()
+        assertTrue(store.state.value.isLoading)
+
+        store.toggleMode()
+
+        assertEquals(AuthMode.SIGN_IN, store.state.value.mode)
+        gate.complete(Unit)
+        runCurrent()
+    }
+
+    @Test
+    fun `sign up creates the account instead of signing in and trims the email`() = runTest {
+        val auth = FakeAuthRepository()
+        val store = storeWith(auth)
+        store.toggleMode()
+        store.fill(email = "  nueva@example.com ", password = "secreto1")
+
+        store.submit()
+        runCurrent()
+
+        assertEquals("nueva@example.com" to "secreto1", auth.signUpCalls.single())
+        assertTrue(auth.signInCalls.isEmpty())
+        assertTrue(store.state.value.isSignedIn)
+        assertEquals("", store.state.value.password)
+    }
+
+    @Test
+    fun `sign up rejects a short password without calling the repository`() = runTest {
+        val auth = FakeAuthRepository()
+        val store = storeWith(auth)
+        store.toggleMode()
+        store.fill(password = "12345")
+
+        store.submit()
+        runCurrent()
+
+        assertEquals(PasswordError.TOO_SHORT, store.state.value.passwordError)
+        assertNull(store.state.value.emailError)
+        assertTrue(auth.signUpCalls.isEmpty())
+    }
+
+    @Test
+    fun `a short password is still accepted when signing in`() = runTest {
+        val auth = FakeAuthRepository()
+        val store = storeWith(auth)
+        store.fill(password = "12345")
+
+        store.submit()
+        runCurrent()
+
+        assertNull(store.state.value.passwordError)
+        assertEquals("ana@example.com" to "12345", auth.signInCalls.single())
+    }
+
+    @Test
+    fun `sign up with an email already in use exposes the error and keeps the form`() = runTest {
+        val auth = FakeAuthRepository().apply { result = AppResult.Failure(AppError.EmailAlreadyInUse) }
+        val store = storeWith(auth)
+        store.toggleMode()
+        store.fill()
+
+        store.submit()
+        runCurrent()
+
+        val state = store.state.value
+        assertEquals(AppError.EmailAlreadyInUse, state.error)
+        assertFalse(state.isLoading)
+        assertFalse(state.isSignedIn)
+        assertEquals(AuthMode.SIGN_UP, state.mode)
+        assertEquals("secreto", state.password)
+    }
+
+    @Test
+    fun `sign up with a weak password exposes the error`() = runTest {
+        val auth = FakeAuthRepository().apply { result = AppResult.Failure(AppError.WeakPassword) }
+        val store = storeWith(auth)
+        store.toggleMode()
+        store.fill()
+
+        store.submit()
+        runCurrent()
+
+        assertEquals(AppError.WeakPassword, store.state.value.error)
+        assertFalse(store.state.value.isSignedIn)
+    }
 }

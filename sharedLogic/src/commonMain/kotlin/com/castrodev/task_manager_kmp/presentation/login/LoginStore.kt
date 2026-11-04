@@ -1,4 +1,5 @@
 // Path: sharedLogic/src/commonMain/kotlin/com/castrodev/task_manager_kmp/presentation/login/LoginStore.kt
+// Path: sharedLogic/src/commonMain/kotlin/com/castrodev/task_manager_kmp/presentation/login/LoginStore.kt
 package com.castrodev.task_manager_kmp.presentation.login
 
 import com.castrodev.task_manager_kmp.core.AppResult
@@ -11,7 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Logica de presentacion compartida del login. Android e iOS solo pintan [state]
+ * Logica de presentacion compartida del login y el registro. Android e iOS solo pintan [state]
  * y le pasan lo que escribe el usuario; la validacion y el flujo viven aqui, una sola vez.
  */
 class LoginStore(
@@ -29,13 +30,35 @@ class LoginStore(
         _state.update { it.copy(password = password, passwordError = null, error = null) }
     }
 
-    /** Valida los campos y, si son correctos, inicia sesion. Se ignora si ya hay un intento en curso. */
+    /**
+     * Alterna entre iniciar sesion y crear cuenta. Conserva lo escrito, limpia los errores
+     * y se ignora mientras hay un intento en curso.
+     */
+    fun toggleMode() {
+        _state.update {
+            if (it.isLoading) {
+                it
+            } else {
+                it.copy(
+                    mode = if (it.mode == AuthMode.SIGN_IN) AuthMode.SIGN_UP else AuthMode.SIGN_IN,
+                    emailError = null,
+                    passwordError = null,
+                    error = null,
+                )
+            }
+        }
+    }
+
+    /**
+     * Valida los campos y, si son correctos, inicia sesion o crea la cuenta segun [LoginState.mode].
+     * Se ignora si ya hay un intento en curso.
+     */
     fun submit() {
         val current = _state.value
         if (current.isLoading) return
 
         val emailError = validateEmail(current.email)
-        val passwordError = validatePassword(current.password)
+        val passwordError = validatePassword(current.password, current.mode)
         if (emailError != null || passwordError != null) {
             _state.update { it.copy(emailError = emailError, passwordError = passwordError) }
             return
@@ -43,7 +66,12 @@ class LoginStore(
 
         _state.update { it.copy(isLoading = true, emailError = null, passwordError = null, error = null) }
         scope.launch {
-            when (val result = authRepository.signIn(current.email.trim(), current.password)) {
+            val email = current.email.trim()
+            val result = when (current.mode) {
+                AuthMode.SIGN_IN -> authRepository.signIn(email, current.password)
+                AuthMode.SIGN_UP -> authRepository.signUp(email, current.password)
+            }
+            when (result) {
                 is AppResult.Success -> _state.update {
                     it.copy(isLoading = false, isSignedIn = true, password = "")
                 }

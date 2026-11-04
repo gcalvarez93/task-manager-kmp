@@ -7,6 +7,7 @@ import com.castrodev.task_manager_kmp.core.AppError
 import com.castrodev.task_manager_kmp.core.AppResult
 import com.castrodev.task_manager_kmp.data.remote.TokenProvider
 import com.castrodev.task_manager_kmp.domain.repository.AuthRepository
+import com.castrodev.task_manager_kmp.presentation.login.AuthMode
 import com.castrodev.task_manager_kmp.presentation.login.EmailError
 import com.castrodev.task_manager_kmp.presentation.login.PasswordError
 import com.castrodev.task_manager_kmp.ui.testing.MainDispatcherExtension
@@ -110,5 +111,32 @@ class LoginViewModelTest {
             assertTrue(final.isSignedIn)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun `toggleMode switches the screen to sign up and back`() {
+        val viewModel = viewModel()
+        assertEquals(AuthMode.SIGN_IN, viewModel.state.value.mode)
+
+        viewModel.toggleMode()
+        assertEquals(AuthMode.SIGN_UP, viewModel.state.value.mode)
+
+        viewModel.toggleMode()
+        assertEquals(AuthMode.SIGN_IN, viewModel.state.value.mode)
+    }
+
+    @Test
+    fun `in sign up mode submitting creates the account instead of signing in`() {
+        coEvery { auth.signUp(any(), any()) } returns AppResult.Success(Unit)
+        val viewModel = viewModel()
+
+        viewModel.toggleMode()
+        viewModel.onEmailChange("  nuevo@test.com ")
+        viewModel.onPasswordChange("secreto1")
+        viewModel.submit()
+
+        assertTrue(viewModel.state.value.isSignedIn)
+        coVerify(exactly = 1) { auth.signUp("nuevo@test.com", "secreto1") }
+        coVerify(exactly = 0) { auth.signIn(any(), any()) }
     }
 }

@@ -24,6 +24,17 @@ final class FirebaseAuthRepository: NSObject, AuthRepository, @unchecked Sendabl
         }
     }
 
+    // Igual que `__signIn`: SKIE oculta `signUp`. Firebase deja la sesión iniciada con la cuenta nueva.
+    func __signUp(email: String, password: String) async throws -> any AppResult {
+        do {
+            _ = try await Auth.auth().createUser(withEmail: email, password: password)
+            return AppResultSuccess<AnyObject>(value: nil)
+        } catch {
+            logger.warning("Fallo al crear la cuenta: \(error.localizedDescription)")
+            return AppResultFailure(error: mapSignUp(error))
+        }
+    }
+
     func signOut() {
         do {
             try Auth.auth().signOut()
@@ -32,10 +43,9 @@ final class FirebaseAuthRepository: NSObject, AuthRepository, @unchecked Sendabl
         }
     }
 
+    /// Errores de `signIn`: casi todo lo relativo a credenciales es `Unauthorized`.
     func map(_ error: Error) -> any AppError {
-        let nsError = error as NSError
-        guard nsError.domain == AuthErrorDomain,
-              let code = AuthErrorCode(rawValue: nsError.code) else {
+        guard let code = authErrorCode(of: error) else {
             return AppErrorUnknown(message: error.localizedDescription)
         }
         switch code {
@@ -46,5 +56,30 @@ final class FirebaseAuthRepository: NSObject, AuthRepository, @unchecked Sendabl
         default:
             return AppErrorUnknown(message: error.localizedDescription)
         }
+    }
+
+    /// Errores de `signUp`: aquí un email mal formado es un error de validación, no de credenciales.
+    func mapSignUp(_ error: Error) -> any AppError {
+        guard let code = authErrorCode(of: error) else {
+            return AppErrorUnknown(message: error.localizedDescription)
+        }
+        switch code {
+        case .emailAlreadyInUse:
+            return AppErrorEmailAlreadyInUse.shared
+        case .weakPassword:
+            return AppErrorWeakPassword.shared
+        case .invalidEmail:
+            return AppErrorValidation(message: "El email no es válido")
+        case .networkError:
+            return AppErrorNetwork(message: error.localizedDescription)
+        default:
+            return AppErrorUnknown(message: error.localizedDescription)
+        }
+    }
+
+    private func authErrorCode(of error: Error) -> AuthErrorCode? {
+        let nsError = error as NSError
+        guard nsError.domain == AuthErrorDomain else { return nil }
+        return AuthErrorCode(rawValue: nsError.code)
     }
 }

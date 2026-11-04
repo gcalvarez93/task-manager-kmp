@@ -21,5 +21,7 @@ class LoginViewModel(container: AppContainer) : ViewModel() {
 
     fun onPasswordChange(password: String) = store.onPasswordChange(password)
 
+    fun toggleMode() = store.toggleMode()
+
     fun submit() = store.submit()
 }

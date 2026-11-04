@@ -39,6 +39,11 @@ final class LoginViewModel {
         store.onPasswordChange(password: password)
     }
 
+    /// Alterna entre iniciar sesión y crear cuenta.
+    func toggleMode() {
+        store.toggleMode()
+    }
+
     func submit() {
         store.submit()
     }

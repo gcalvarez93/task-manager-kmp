@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Path: androidApp/src/main/res/values/strings_auth.xml -->
+<resources>
+    <!-- Cabecera y botones del login -->
+    <string name="login_subtitle">Organiza tus tableros y tareas</string>
+    <string name="login_show_password">Mostrar</string>
+    <string name="login_hide_password">Ocultar</string>
+
+    <!-- Registro -->
+    <string name="register_title">Crear cuenta</string>
+    <string name="register_subtitle">Empieza a organizar tus tareas</string>
+    <string name="register_submit">Crear cuenta</string>
+
+    <!-- Enlace para alternar entre login y registro -->
+    <string name="login_no_account">¿No tienes cuenta?</string>
+    <string name="login_switch_to_sign_up">Regístrate</string>
+    <string name="login_have_account">¿Ya tienes cuenta?</string>
+    <string name="login_switch_to_sign_in">Inicia sesión</string>
+
+    <!-- Contraseña y errores del registro (%1$d = longitud mínima) -->
+    <string name="login_password_hint">Mínimo %1$d caracteres</string>
+    <string name="login_error_password_too_short">La contraseña debe tener al menos %1$d caracteres</string>
+    <string name="login_error_email_in_use">Ya existe una cuenta con ese email</string>
+    <string name="login_error_weak_password">La contraseña es demasiado débil</string>
+</resources>

@@ -15,5 +15,12 @@ interface AuthRepository {
     /** Inicia sesion con email y contrasena. Las credenciales incorrectas devuelven `AppError.Unauthorized`. */
     suspend fun signIn(email: String, password: String): AppResult<Unit>
 
+    /**
+     * Crea una cuenta con email y contrasena y deja la sesion iniciada.
+     * Devuelve `AppError.EmailAlreadyInUse` si el email ya esta registrado y
+     * `AppError.WeakPassword` si la contrasena no cumple los requisitos del proveedor.
+     */
+    suspend fun signUp(email: String, password: String): AppResult<Unit>
+
     fun signOut()
 }

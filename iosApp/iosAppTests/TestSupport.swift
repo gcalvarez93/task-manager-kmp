@@ -2,7 +2,7 @@
 import Foundation
 import SharedLogic
 
-/// Llamada registrada por [FakeAuthRepository].
+/// Llamada registrada por [FakeAuthRepository] (email y contraseña recibidos).
 struct SignInCall: Equatable {
     let email: String
     let password: String
@@ -14,8 +14,9 @@ final class FakeAuthRepository: NSObject, AuthRepository, @unchecked Sendable {
     private let lock = NSLock()
     private var signedIn: Bool
     private var recordedCalls: [SignInCall] = []
+    private var recordedSignUpCalls: [SignInCall] = []
 
-    /// Resultado que devolverá `signIn`. Se configura antes de usar el repositorio.
+    /// Resultado que devolverán `signIn` y `signUp`. Se configura antes de usar el repositorio.
     var result: any AppResult = AppResultSuccess<AnyObject>(value: nil)
 
     init(signedIn: Bool = false) {
@@ -27,12 +28,23 @@ final class FakeAuthRepository: NSObject, AuthRepository, @unchecked Sendable {
         lock.withLock { signedIn }
     }
 
+    /// Llamadas a `signIn`.
     var calls: [SignInCall] {
         lock.withLock { recordedCalls }
     }
 
+    /// Llamadas a `signUp`.
+    var signUpCalls: [SignInCall] {
+        lock.withLock { recordedSignUpCalls }
+    }
+
     func __signIn(email: String, password: String) async throws -> any AppResult {
         lock.withLock { recordedCalls.append(SignInCall(email: email, password: password)) }
+        return result
+    }
+
+    func __signUp(email: String, password: String) async throws -> any AppResult {
+        lock.withLock { recordedSignUpCalls.append(SignInCall(email: email, password: password)) }
         return result
     }
 

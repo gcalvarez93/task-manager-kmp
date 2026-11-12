@@ -52,7 +52,7 @@ A board-based task manager built with **Kotlin Multiplatform**. Networking, busi
 | Kotlin ↔ Swift | SKIE 0.10.15 |
 | Authentication | Firebase Auth, native SDK on each platform, behind a shared interface |
 | Backend | .NET 10 REST API (Clean Architecture) on Google Cloud Run, Cloud Firestore |
-| Logging (iOS) | swift-log |
+| Logging | Timber (Android), swift-log (iOS) |
 | Build | Gradle 9.6.0, Android Gradle Plugin 9.5.0 |
 | Testing | `kotlin.test` + Turbine (shared), JUnit 5 + MockK + Turbine (Android), Swift Testing + XCTest UI (iOS) |
 
@@ -97,6 +97,15 @@ task-manager-kmp/
 - **Thin ViewModels.** Android and iOS ViewModels only mirror the store state for their UI framework and cancel the work when they disappear.
 - **Tests at every layer, with hand-written fakes.** Mapping, repositories (against Ktor's `MockEngine`), use cases and stores are tested once in shared code, with Turbine for `Flow`s. Each platform adds its ViewModel tests, and iOS adds UI tests for the login and sign-up flows. More than 160 tests in total.
 - **Shared .NET 10 API.** Business rules live on the server; the apps send the Firebase ID token. One backend serves all the apps in this portfolio.
+
+### Known limitations
+
+Deliberate technical debt, documented rather than hidden:
+
+- **Expired session (401/403).** The app does not refresh the Firebase token or sign the user out by itself. A 401 and a 403 both end up as the same `Unauthorized` error, and the user sees «Tu sesión ha caducado» and has to sign in again. Next step: refresh the token and retry the request once, and tell 401 from 403.
+- **Backend (Tasks module).** `castrodev-api` answers `500` instead of `404` when a task or board does not exist (an unhandled `KeyNotFoundException`) and does not use `ProblemDetails` there yet, so the app can only show a generic server error for that case.
+- **Repeated taps.** Creating is protected against double submission; deleting and changing a task's status are not.
+- **Language.** The UI is Spanish only; strings are not localized yet.
 
 ### Other projects in this portfolio
 
@@ -219,7 +228,7 @@ App de gestión de tareas por tableros construida con **Kotlin Multiplatform**. 
 | Kotlin ↔ Swift | SKIE 0.10.15 |
 | Autenticación | Firebase Auth, SDK nativo en cada plataforma, tras una interfaz compartida |
 | Backend | API REST .NET 10 (Clean Architecture) en Google Cloud Run, Cloud Firestore |
-| Logging (iOS) | swift-log |
+| Logging | Timber (Android), swift-log (iOS) |
 | Build | Gradle 9.6.0, Android Gradle Plugin 9.5.0 |
 | Tests | `kotlin.test` + Turbine (compartido), JUnit 5 + MockK + Turbine (Android), Swift Testing + XCTest UI (iOS) |
 
@@ -264,6 +273,15 @@ task-manager-kmp/
 - **ViewModels finos.** Los ViewModels de Android e iOS solo reflejan el estado del store para su framework de UI y cancelan el trabajo cuando desaparecen.
 - **Tests en cada capa, con fakes escritos a mano.** Los mapeos, los repositorios (contra el `MockEngine` de Ktor), los casos de uso y los stores se prueban una vez en código compartido, con Turbine para los `Flow`. Cada plataforma añade los tests de sus ViewModels, e iOS añade tests de UI para los flujos de login y registro. Más de 160 tests en total.
 - **API compartida en .NET 10.** Las reglas de negocio viven en el servidor; las apps envían el token de Firebase. Un solo backend sirve a todas las apps de este portfolio.
+
+### Limitaciones conocidas
+
+Deuda técnica asumida a propósito, documentada en lugar de ocultada:
+
+- **Sesión caducada (401/403).** La app no renueva el token de Firebase ni cierra la sesión por sí sola. Un 401 y un 403 acaban en el mismo error `Unauthorized`, y el usuario ve «Tu sesión ha caducado» y tiene que volver a entrar. Siguiente paso: renovar el token y reintentar la petición una vez, y distinguir 401 de 403.
+- **Backend (módulo Tasks).** `castrodev-api` responde `500` en lugar de `404` cuando una tarea o un tablero no existe (una `KeyNotFoundException` sin controlar) y aún no usa `ProblemDetails` ahí, así que la app solo puede mostrar un error genérico de servidor en ese caso.
+- **Toques repetidos.** Crear está protegido contra el doble envío; borrar y cambiar el estado de una tarea, no.
+- **Idioma.** La interfaz está solo en español; los textos aún no están localizados.
 
 ### Otros proyectos del portfolio
 

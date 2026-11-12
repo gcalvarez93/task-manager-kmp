@@ -21,11 +21,17 @@ class TaskListViewModel(container: AppContainer, val boardId: String) : ViewMode
         store.refresh()
     }
 
+    fun refresh() = store.refresh()
+
     fun setFilter(status: TaskStatus?) = store.setFilter(status)
 
     fun changeStatus(task: TaskItem, status: TaskStatus) = store.changeStatus(task, status)
 
     fun delete(id: String) = store.delete(id)
+
+    fun openCreateForm() = store.openCreateForm()
+
+    fun closeCreateForm() = store.closeCreateForm()
 
     fun create(task: NewTask) = store.create(task)
 

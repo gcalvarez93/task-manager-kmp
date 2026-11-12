@@ -22,6 +22,7 @@ kotlinxSerialization = "1.12.0"
 ktor = "3.6.1"
 mockk = "1.14.5"
 skie = "0.10.15"
+timber = "5.0.1"
 turbine = "1.2.1"
 
 [libraries]
@@ -60,6 +61,7 @@ ktor-serialization-kotlinxJson = { module = "io.ktor:ktor-serialization-kotlinx-
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
 [plugins]

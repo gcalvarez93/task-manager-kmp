@@ -33,9 +33,13 @@
     <string name="action_cancel">Cancelar</string>
     <string name="action_delete">Eliminar</string>
     <string name="action_add">Añadir</string>
+    <string name="action_retry">Reintentar</string>
 
     <string name="error_unauthorized">Tu sesión ha caducado. Cierra sesión y vuelve a entrar</string>
     <string name="error_not_found">No se ha encontrado el elemento</string>
     <string name="error_network">Sin conexión. Comprueba tu red e inténtalo de nuevo</string>
+    <string name="error_timeout">La operación ha tardado demasiado. Inténtalo de nuevo</string>
+    <string name="error_rejected">El servidor no ha aceptado los datos. Revísalos e inténtalo de nuevo</string>
+    <string name="error_server">El servidor no está disponible ahora. Inténtalo más tarde</string>
     <string name="error_generic">Algo ha fallado. Inténtalo de nuevo</string>
 </resources>

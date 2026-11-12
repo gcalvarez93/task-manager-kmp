@@ -30,7 +30,6 @@ struct TasksView: View {
 
     let title: String
     @State private var viewModel: TasksViewModel
-    @State private var showCreateSheet = false
     @State private var taskToDelete: TaskItem?
 
     init(container: AppContainer, boardId: String, title: String) {
@@ -64,7 +63,7 @@ struct TasksView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    showCreateSheet = true
+                    viewModel.openCreateForm()
                 } label: {
                     Image(systemName: "plus")
                 }
@@ -73,10 +72,20 @@ struct TasksView: View {
             }
         }
         .task { viewModel.refresh() }
-        .sheet(isPresented: $showCreateSheet) {
-            CreateTaskSheet { title, priority in
-                viewModel.create(title: title, priority: priority)
-            }
+        .sheet(
+            isPresented: Binding(
+                get: { viewModel.state.isCreateFormOpen },
+                set: { isPresented in
+                    if !isPresented { viewModel.closeCreateForm() }
+                }
+            )
+        ) {
+            CreateTaskSheet(
+                isCreating: viewModel.state.isCreating,
+                error: viewModel.state.createError,
+                onCancel: viewModel.closeCreateForm,
+                onCreate: { title, priority in viewModel.create(title: title, priority: priority) }
+            )
         }
         .confirmationDialog(
             "Eliminar tarea",
@@ -103,25 +112,36 @@ struct TasksView: View {
         if state.isLoading && state.allTasks.isEmpty {
             ProgressView()
                 .frame(maxHeight: .infinity)
+        } else if let loadError = state.loadError, state.allTasks.isEmpty {
+            RefreshableMessage(onRefresh: { await viewModel.refreshAndWait() }) {
+                LoadErrorView(
+                    title: "No se han podido cargar las tareas",
+                    error: loadError,
+                    onRetry: viewModel.refresh
+                )
+            }
         } else if state.visibleTasks.isEmpty {
-            ContentUnavailableView(
-                "No hay tareas para mostrar",
-                systemImage: "checklist"
-            )
+            RefreshableMessage(onRefresh: { await viewModel.refreshAndWait() }) {
+                ContentUnavailableView(
+                    "No hay tareas para mostrar",
+                    systemImage: "checklist"
+                )
+            }
         } else {
             List(state.visibleTasks, id: \.id) { task in
                 TaskRow(
                     task: task,
                     onChangeStatus: { viewModel.changeStatus(of: task, to: $0) }
                 )
-                .swipeActions {
-                    Button(role: .destructive) {
-                        taskToDelete = task
-                    } label: {
-                        Label("Eliminar", systemImage: "trash")
+                    .swipeActions {
+                        Button(role: .destructive) {
+                            taskToDelete = task
+                        } label: {
+                            Label("Eliminar", systemImage: "trash")
+                        }
                     }
-                }
             }
+            .refreshable { await viewModel.refreshAndWait() }
         }
     }
 }
@@ -155,17 +175,28 @@ private struct TaskRow: View {
 
 private struct CreateTaskSheet: View {
 
+    let isCreating: Bool
+    let error: (any AppError)?
+    let onCancel: () -> Void
     let onCreate: (String, TaskPriority) -> Void
-    @Environment(\.dismiss) private var dismiss
     @State private var title = ""
     @State private var priority: TaskPriority = .medium
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Título") {
+                Section {
                     TextField("Título", text: $title)
+                        .disabled(isCreating)
                         .accessibilityIdentifier("task_title_field")
+                } header: {
+                    Text("Título")
+                } footer: {
+                    if let error {
+                        Text(userMessage(for: error))
+                            .foregroundStyle(.red)
+                            .accessibilityIdentifier("task_create_error")
+                    }
                 }
                 Section("Prioridad") {
                     Picker("Prioridad", selection: $priority) {
@@ -174,20 +205,24 @@ private struct CreateTaskSheet: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                    .disabled(isCreating)
                 }
             }
+            .interactiveDismissDisabled(isCreating)
             .navigationTitle("Nueva tarea")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancelar") { dismiss() }
+                    Button("Cancelar", action: onCancel)
+                        .disabled(isCreating)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Crear") {
-                        onCreate(title, priority)
-                        dismiss()
+                    if isCreating {
+                        ProgressView()
+                    } else {
+                        Button("Crear") { onCreate(title, priority) }
+                        .accessibilityIdentifier("task_create_button")
                     }
-                    .accessibilityIdentifier("task_create_button")
                 }
             }
         }

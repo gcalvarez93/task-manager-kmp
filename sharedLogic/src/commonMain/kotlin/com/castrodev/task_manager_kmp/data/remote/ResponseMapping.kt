@@ -8,22 +8,27 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 
-private const val MAX_ERROR_MESSAGE_LENGTH = 200
+private const val MAX_ERROR_DETAIL_LENGTH = 200
 
-/** Traduce una respuesta con error HTTP a un [AppError]. */
+/**
+ * Traduce una respuesta con error HTTP a un [AppError].
+ *
+ * El texto que devuelve el servidor se conserva solo como detalle para los logs
+ * ([AppError.Rejected.detail] y [AppError.Server.message]): nunca llega a la pantalla.
+ */
 internal suspend fun HttpResponse.toAppError(): AppError {
     val text = try {
         bodyAsText()
     } catch (e: Exception) {
         ""
     }
-    val message = text.take(MAX_ERROR_MESSAGE_LENGTH).ifBlank { status.description }
+    val detail = text.take(MAX_ERROR_DETAIL_LENGTH).ifBlank { status.description }
 
     return when (status.value) {
         401, 403 -> AppError.Unauthorized
         404 -> AppError.NotFound
-        400, 422 -> AppError.Validation(message)
-        else -> AppError.Server(status.value, message)
+        400, 422 -> AppError.Rejected(status.value, detail)
+        else -> AppError.Server(status.value, detail)
     }
 }
 

@@ -13,6 +13,9 @@ import com.castrodev.task_manager_kmp.domain.model.TaskPriority
 import com.castrodev.task_manager_kmp.domain.model.TaskStatus
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.network.sockets.SocketTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -83,14 +86,55 @@ class KtorTaskRepositoryTest {
     }
 
     @Test
-    fun `getTasks returns a validation error for a 400 response`() = runTest {
+    fun `getTasks returns rejected with the server detail for a 400 response`() = runTest {
         val engine = MockEngine { jsonResponse("titulo vacio", HttpStatusCode.BadRequest) }
         val repository = KtorTaskRepository(testClient(engine))
 
         val failure = assertIs<AppResult.Failure>(repository.getTasks())
 
-        val error = assertIs<AppError.Validation>(failure.error)
-        assertTrue(error.message.contains("titulo vacio"), error.message)
+        val error = assertIs<AppError.Rejected>(failure.error)
+        assertEquals(400, error.statusCode)
+        assertTrue(error.detail.contains("titulo vacio"), error.detail)
+    }
+
+    @Test
+    fun `getTasks returns rejected for a 422 response`() = runTest {
+        val engine = MockEngine { jsonResponse("{\"errors\":[]}", HttpStatusCode.UnprocessableEntity) }
+        val repository = KtorTaskRepository(testClient(engine))
+
+        val failure = assertIs<AppResult.Failure>(repository.getTasks())
+
+        assertEquals(422, assertIs<AppError.Rejected>(failure.error).statusCode)
+    }
+
+    @Test
+    fun `getTasks returns timeout when the request times out`() = runTest {
+        val engine = MockEngine { throw HttpRequestTimeoutException("https://api.test/api/tasks", 30_000L) }
+        val repository = KtorTaskRepository(testClient(engine))
+
+        val failure = assertIs<AppResult.Failure>(repository.getTasks())
+
+        assertEquals(AppError.Timeout, failure.error)
+    }
+
+    @Test
+    fun `getTasks returns timeout when the connection times out`() = runTest {
+        val engine = MockEngine { throw ConnectTimeoutException("connect timeout") }
+        val repository = KtorTaskRepository(testClient(engine))
+
+        val failure = assertIs<AppResult.Failure>(repository.getTasks())
+
+        assertEquals(AppError.Timeout, failure.error)
+    }
+
+    @Test
+    fun `getTasks returns timeout when the socket times out`() = runTest {
+        val engine = MockEngine { throw SocketTimeoutException("socket timeout") }
+        val repository = KtorTaskRepository(testClient(engine))
+
+        val failure = assertIs<AppResult.Failure>(repository.getTasks())
+
+        assertEquals(AppError.Timeout, failure.error)
     }
 
     @Test

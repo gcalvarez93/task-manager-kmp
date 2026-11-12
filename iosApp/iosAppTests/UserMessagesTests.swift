@@ -25,6 +25,28 @@ struct UserMessagesTests {
         #expect(userMessage(for: error) == "Sin conexión. Comprueba tu red e inténtalo de nuevo")
     }
 
+    @Test func timeoutAsksToTryAgain() {
+        #expect(userMessage(for: AppErrorTimeout.shared) == "La operación ha tardado demasiado. Inténtalo de nuevo")
+    }
+
+    @Test func rejectedDataNeverShowsTheServerDetail() {
+        let error = AppErrorRejected(statusCode: 400, detail: "{\"errors\":{\"Title\":[\"detalle interno\"]}}")
+
+        let message = userMessage(for: error)
+
+        #expect(message == "El servidor no ha aceptado los datos. Revísalos e inténtalo de nuevo")
+        #expect(!message.contains("detalle interno"))
+    }
+
+    @Test func serverErrorNeverShowsTheServerMessage() {
+        let error = AppErrorServer(statusCode: 500, message: "stacktrace interno")
+
+        let message = userMessage(for: error)
+
+        #expect(message == "El servidor no está disponible ahora. Inténtalo más tarde")
+        #expect(!message.contains("stacktrace"))
+    }
+
     @Test func emailAlreadyInUseHasItsOwnMessage() {
         #expect(userMessage(for: AppErrorEmailAlreadyInUse.shared) == "Ya existe una cuenta con ese email")
     }
@@ -34,10 +56,10 @@ struct UserMessagesTests {
     }
 
     @Test func otherErrorsUseTheGenericMessage() {
-        let server = AppErrorServer(statusCode: 500, message: "boom")
+        let invalid = AppErrorInvalidData(message: "fecha mal formada")
         let unknown = AppErrorUnknown(message: "???")
 
-        #expect(userMessage(for: server) == "Algo ha fallado. Inténtalo de nuevo")
+        #expect(userMessage(for: invalid) == "Algo ha fallado. Inténtalo de nuevo")
         #expect(userMessage(for: unknown) == "Algo ha fallado. Inténtalo de nuevo")
     }
 }

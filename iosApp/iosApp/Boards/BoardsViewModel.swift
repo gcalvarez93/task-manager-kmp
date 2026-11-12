@@ -34,6 +34,23 @@ final class BoardsViewModel {
         store.refresh()
     }
 
+    /// Recarga y espera a que termine. Es lo que necesita `.refreshable`: SwiftUI mantiene
+    /// el indicador visible mientras dura esta llamada. Si ya había una carga en curso, espera a esa.
+    func refreshAndWait() async {
+        store.refresh()
+        for await newState in store.state where !newState.isLoading {
+            return
+        }
+    }
+
+    func openCreateForm() {
+        store.openCreateForm()
+    }
+
+    func closeCreateForm() {
+        store.closeCreateForm()
+    }
+
     func create(name: String, color: String) {
         store.create(board: NewBoard(name: name, description: "", color: color))
     }

@@ -1,6 +1,8 @@
 // Path: sharedLogic/src/commonMain/kotlin/com/castrodev/task_manager_kmp/AppContainer.kt
 package com.castrodev.task_manager_kmp
 
+import com.castrodev.task_manager_kmp.core.ErrorLogger
+import com.castrodev.task_manager_kmp.core.NoOpErrorLogger
 import com.castrodev.task_manager_kmp.data.DataModule
 import com.castrodev.task_manager_kmp.data.remote.TokenProvider
 import com.castrodev.task_manager_kmp.domain.repository.AuthRepository
@@ -22,14 +24,23 @@ import kotlinx.coroutines.CoroutineScope
  * @param baseUrl URL base de la API, por ejemplo `https://api.castrodev.com`.
  * @param tokenProvider origen del ID token de Firebase del usuario (lo implementa cada plataforma).
  * @param authRepository inicio y cierre de sesion (lo implementa cada plataforma con Firebase Auth).
+ * @param logger destino de los logs de errores de red (lo implementa cada plataforma).
  */
 class AppContainer(
     baseUrl: String,
     tokenProvider: TokenProvider,
     val authRepository: AuthRepository,
+    logger: ErrorLogger,
 ) {
 
-    private val data = DataModule(baseUrl, tokenProvider)
+    /** Sin registro de errores: pensado para los tests. Las apps deben pasar su [ErrorLogger]. */
+    constructor(
+        baseUrl: String,
+        tokenProvider: TokenProvider,
+        authRepository: AuthRepository,
+    ) : this(baseUrl, tokenProvider, authRepository, NoOpErrorLogger)
+
+    private val data = DataModule(baseUrl, tokenProvider, logger)
 
     val tasks: TaskRepository = data.tasks
     val boards: BoardRepository = data.boards

@@ -21,6 +21,10 @@ class BoardListViewModel(container: AppContainer) : ViewModel() {
 
     fun refresh() = store.refresh()
 
+    fun openCreateForm() = store.openCreateForm()
+
+    fun closeCreateForm() = store.closeCreateForm()
+
     fun create(board: NewBoard) = store.create(board)
 
     fun delete(id: String) = store.delete(id)

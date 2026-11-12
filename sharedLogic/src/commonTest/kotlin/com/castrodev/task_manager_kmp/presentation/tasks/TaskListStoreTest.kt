@@ -63,7 +63,7 @@ class TaskListStoreTest {
     }
 
     @Test
-    fun `refresh failure stops loading and exposes the error`() = runTest {
+    fun `refresh failure with nothing to show exposes a load error instead of an empty list`() = runTest {
         val repository = FakeTaskRepository().apply { failWith = AppError.Unauthorized }
         val store = storeWith(repository)
 
@@ -72,8 +72,60 @@ class TaskListStoreTest {
 
         val state = store.state.value
         assertFalse(state.isLoading)
-        assertEquals(AppError.Unauthorized, state.error)
+        assertEquals(AppError.Unauthorized, state.loadError)
+        assertNull(state.error)
         assertTrue(state.allTasks.isEmpty())
+    }
+
+    @Test
+    fun `refresh failure with tasks on screen keeps them and exposes a transient error`() = runTest {
+        val repository = FakeTaskRepository(listOf(taskItem("1")))
+        val store = storeWith(repository)
+        store.refresh()
+        runCurrent()
+        repository.failWith = AppError.Timeout
+
+        store.refresh()
+        runCurrent()
+
+        val state = store.state.value
+        assertEquals(listOf("1"), state.allTasks.map { it.id })
+        assertEquals(AppError.Timeout, state.error)
+        assertNull(state.loadError)
+    }
+
+    @Test
+    fun `retrying after a load error clears it and loads the tasks`() = runTest {
+        val repository = FakeTaskRepository(listOf(taskItem("1"))).apply { failWith = AppError.Timeout }
+        val store = storeWith(repository)
+        store.refresh()
+        runCurrent()
+        assertEquals(AppError.Timeout, store.state.value.loadError)
+
+        repository.failWith = null
+        store.refresh()
+        runCurrent()
+
+        val state = store.state.value
+        assertNull(state.loadError)
+        assertEquals(listOf("1"), state.allTasks.map { it.id })
+    }
+
+    @Test
+    fun `refresh is ignored while a load is already in progress`() = runTest {
+        val repository = FakeTaskRepository(listOf(taskItem("1")))
+        repository.gate = CompletableDeferred()
+        val store = storeWith(repository)
+
+        store.refresh()
+        runCurrent()
+        store.refresh()
+        runCurrent()
+        repository.gate?.complete(Unit)
+        runCurrent()
+
+        assertEquals(listOf("1"), store.state.value.allTasks.map { it.id })
+        assertFalse(store.state.value.isLoading)
     }
 
     @Test
@@ -173,32 +225,140 @@ class TaskListStoreTest {
     }
 
     @Test
-    fun `create adds the new task to the list`() = runTest {
+    fun `openCreateForm opens the form and closeCreateForm closes it`() = runTest {
         val store = storeWith(FakeTaskRepository())
+
+        store.openCreateForm()
+        assertTrue(store.state.value.isCreateFormOpen)
+
+        store.closeCreateForm()
+        assertFalse(store.state.value.isCreateFormOpen)
+    }
+
+    @Test
+    fun `create adds the new task to the list and closes the form`() = runTest {
+        val store = storeWith(FakeTaskRepository())
+        store.openCreateForm()
 
         store.create(NewTask(boardId = "board-1", title = "Comprar pan"))
         runCurrent()
 
-        assertEquals("Comprar pan", store.state.value.allTasks.single().title)
+        val state = store.state.value
+        assertEquals("Comprar pan", state.allTasks.single().title)
+        assertFalse(state.isCreateFormOpen)
+        assertFalse(state.isCreating)
+        assertNull(state.createError)
     }
 
     @Test
-    fun `create with a blank title exposes a validation error`() = runTest {
+    fun `create with a blank title keeps the form open with a validation error`() = runTest {
         val store = storeWith(FakeTaskRepository())
+        store.openCreateForm()
 
         store.create(NewTask(boardId = "board-1", title = " "))
         runCurrent()
 
         val state = store.state.value
-        assertIs<AppError.Validation>(state.error)
+        assertIs<AppError.Validation>(state.createError)
+        assertTrue(state.isCreateFormOpen)
+        assertFalse(state.isCreating)
+        assertNull(state.error)
         assertTrue(state.allTasks.isEmpty())
     }
 
     @Test
+    fun `create failure keeps the form open so the input is not lost`() = runTest {
+        val repository = FakeTaskRepository().apply { failWith = AppError.Network("sin conexion") }
+        val store = storeWith(repository)
+        store.openCreateForm()
+
+        store.create(NewTask(boardId = "board-1", title = "Comprar pan"))
+        runCurrent()
+
+        val state = store.state.value
+        assertIs<AppError.Network>(state.createError)
+        assertTrue(state.isCreateFormOpen)
+        assertFalse(state.isCreating)
+        assertNull(state.error)
+    }
+
+    @Test
+    fun `a new attempt clears the previous create error`() = runTest {
+        val repository = FakeTaskRepository().apply { failWith = AppError.Timeout }
+        val store = storeWith(repository)
+        store.openCreateForm()
+        store.create(NewTask(boardId = "board-1", title = "Comprar pan"))
+        runCurrent()
+        assertEquals(AppError.Timeout, store.state.value.createError)
+
+        repository.failWith = null
+        store.create(NewTask(boardId = "board-1", title = "Comprar pan"))
+        runCurrent()
+
+        val state = store.state.value
+        assertNull(state.createError)
+        assertFalse(state.isCreateFormOpen)
+        assertEquals(1, state.allTasks.size)
+    }
+
+    @Test
+    fun `create is ignored while another attempt is in progress`() = runTest {
+        val repository = FakeTaskRepository()
+        repository.createGate = CompletableDeferred()
+        val store = storeWith(repository)
+        store.openCreateForm()
+
+        store.create(NewTask(boardId = "board-1", title = "Comprar pan"))
+        runCurrent()
+        assertTrue(store.state.value.isCreating)
+        store.create(NewTask(boardId = "board-1", title = "Comprar pan"))
+        runCurrent()
+        repository.createGate?.complete(Unit)
+        runCurrent()
+
+        assertEquals(1, repository.created.size)
+        assertEquals(1, store.state.value.allTasks.size)
+    }
+
+    @Test
+    fun `closeCreateForm is ignored while a create is in progress`() = runTest {
+        val repository = FakeTaskRepository()
+        repository.createGate = CompletableDeferred()
+        val store = storeWith(repository)
+        store.openCreateForm()
+        store.create(NewTask(boardId = "board-1", title = "Comprar pan"))
+        runCurrent()
+
+        store.closeCreateForm()
+
+        assertTrue(store.state.value.isCreateFormOpen)
+    }
+
+    @Test
+    fun `closeCreateForm discards the create error`() = runTest {
+        val store = storeWith(FakeTaskRepository())
+        store.openCreateForm()
+        store.create(NewTask(boardId = "board-1", title = " "))
+        runCurrent()
+
+        store.closeCreateForm()
+
+        val state = store.state.value
+        assertFalse(state.isCreateFormOpen)
+        assertNull(state.createError)
+    }
+
+    @Test
     fun `clearError removes the pending error`() = runTest {
-        val store = storeWith(FakeTaskRepository().apply { failWith = AppError.Unauthorized })
+        val task = taskItem("1")
+        val repository = FakeTaskRepository(listOf(task))
+        val store = storeWith(repository)
         store.refresh()
         runCurrent()
+        repository.failWith = AppError.Unauthorized
+        store.delete("1")
+        runCurrent()
+        assertEquals(AppError.Unauthorized, store.state.value.error)
 
         store.clearError()
 

@@ -19,6 +19,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -78,7 +79,21 @@ class TaskListViewModelTest {
 
         val viewModel = viewModel()
 
-        assertEquals(AppError.Unauthorized, viewModel.state.value.error)
+        assertEquals(AppError.Unauthorized, viewModel.state.value.loadError)
+        assertNull(viewModel.state.value.error)
+    }
+
+    @Test
+    fun `refresh retries the load after a failure`() {
+        coEvery { repository.getTasks(boardId) } returns AppResult.Failure(AppError.Timeout)
+        val viewModel = viewModel()
+        assertEquals(AppError.Timeout, viewModel.state.value.loadError)
+
+        coEvery { repository.getTasks(boardId) } returns AppResult.Success(listOf(task("1")))
+        viewModel.refresh()
+
+        assertNull(viewModel.state.value.loadError)
+        assertEquals(listOf("1"), viewModel.state.value.allTasks.map { it.id })
     }
 
     @Test
@@ -108,25 +123,56 @@ class TaskListViewModelTest {
     }
 
     @Test
-    fun `create adds the new task to the list`() {
+    fun `create adds the new task to the list and closes the form`() {
         coEvery { repository.getTasks(boardId) } returns AppResult.Success(emptyList())
         coEvery { repository.createTask(any()) } returns AppResult.Success(task("new"))
         val viewModel = viewModel()
+        viewModel.openCreateForm()
 
         viewModel.create(NewTask(boardId = boardId, title = "Comprar pan"))
 
         assertEquals(listOf("new"), viewModel.state.value.allTasks.map { it.id })
+        assertFalse(viewModel.state.value.isCreateFormOpen)
     }
 
     @Test
-    fun `create with a blank title exposes a validation error and does not call the repository`() {
+    fun `create with a blank title keeps the form open and does not call the repository`() {
         coEvery { repository.getTasks(boardId) } returns AppResult.Success(emptyList())
         val viewModel = viewModel()
+        viewModel.openCreateForm()
 
         viewModel.create(NewTask(boardId = boardId, title = "  "))
 
-        assertTrue(viewModel.state.value.error is AppError.Validation)
+        assertTrue(viewModel.state.value.createError is AppError.Validation)
+        assertTrue(viewModel.state.value.isCreateFormOpen)
         coVerify(exactly = 0) { repository.createTask(any()) }
+    }
+
+    @Test
+    fun `create failure keeps the form open with the error`() {
+        coEvery { repository.getTasks(boardId) } returns AppResult.Success(emptyList())
+        coEvery { repository.createTask(any()) } returns AppResult.Failure(AppError.Timeout)
+        val viewModel = viewModel()
+        viewModel.openCreateForm()
+
+        viewModel.create(NewTask(boardId = boardId, title = "Comprar pan"))
+
+        assertEquals(AppError.Timeout, viewModel.state.value.createError)
+        assertTrue(viewModel.state.value.isCreateFormOpen)
+        assertTrue(viewModel.state.value.allTasks.isEmpty())
+    }
+
+    @Test
+    fun `closeCreateForm closes the form and discards its error`() {
+        coEvery { repository.getTasks(boardId) } returns AppResult.Success(emptyList())
+        val viewModel = viewModel()
+        viewModel.openCreateForm()
+        viewModel.create(NewTask(boardId = boardId, title = "  "))
+
+        viewModel.closeCreateForm()
+
+        assertFalse(viewModel.state.value.isCreateFormOpen)
+        assertNull(viewModel.state.value.createError)
     }
 
     @Test
@@ -142,8 +188,11 @@ class TaskListViewModelTest {
 
     @Test
     fun `clearError removes the pending error`() {
-        coEvery { repository.getTasks(boardId) } returns AppResult.Failure(AppError.NotFound)
+        coEvery { repository.getTasks(boardId) } returns AppResult.Success(listOf(task("1")))
+        coEvery { repository.deleteTask("1") } returns AppResult.Failure(AppError.NotFound)
         val viewModel = viewModel()
+        viewModel.delete("1")
+        assertEquals(AppError.NotFound, viewModel.state.value.error)
 
         viewModel.clearError()
 

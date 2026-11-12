@@ -25,6 +25,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -47,10 +48,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.castrodev.task_manager_kmp.AppContainer
 import com.castrodev.task_manager_kmp.R
+import com.castrodev.task_manager_kmp.core.AppError
 import com.castrodev.task_manager_kmp.domain.model.Board
 import com.castrodev.task_manager_kmp.domain.model.NewBoard
 import com.castrodev.task_manager_kmp.presentation.boards.BoardListState
 import com.castrodev.task_manager_kmp.ui.common.ErrorSnackbarEffect
+import com.castrodev.task_manager_kmp.ui.common.FullScreenMessage
+import com.castrodev.task_manager_kmp.ui.common.LoadErrorMessage
+import com.castrodev.task_manager_kmp.ui.common.asMessage
 import kotlin.time.Instant
 
 private val BoardColors = listOf("#FF9800", "#F44336", "#4CAF50", "#2196F3", "#9C27B0")
@@ -68,6 +73,9 @@ fun BoardsRoute(
     BoardsScreen(
         state = state,
         onBoardClick = onBoardClick,
+        onRefresh = viewModel::refresh,
+        onOpenCreateForm = viewModel::openCreateForm,
+        onCloseCreateForm = viewModel::closeCreateForm,
         onCreate = viewModel::create,
         onDelete = viewModel::delete,
         onErrorShown = viewModel::clearError,
@@ -75,12 +83,19 @@ fun BoardsRoute(
     )
 }
 
-/** Pantalla sin estado propio salvo los dialogos abiertos. */
+/**
+ * Pantalla sin estado propio salvo lo que se escribe en el formulario y el dialogo de borrar.
+ * El formulario de crear esta abierto mientras [BoardListState.isCreateFormOpen] sea `true`:
+ * si crear falla sigue abierto y conserva lo escrito.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BoardsScreen(
     state: BoardListState,
     onBoardClick: (String) -> Unit,
+    onRefresh: () -> Unit,
+    onOpenCreateForm: () -> Unit,
+    onCloseCreateForm: () -> Unit,
     onCreate: (NewBoard) -> Unit,
     onDelete: (String) -> Unit,
     onErrorShown: () -> Unit,
@@ -88,8 +103,9 @@ fun BoardsScreen(
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    var showCreateDialog by remember { mutableStateOf(false) }
     var boardToDelete by remember { mutableStateOf<Board?>(null) }
+    // Copia local: `state` viene de otro modulo y Kotlin no permite hacer smart cast sobre sus propiedades.
+    val loadError = state.loadError
 
     ErrorSnackbarEffect(state.error, snackbarHostState, onErrorShown)
 
@@ -106,27 +122,29 @@ fun BoardsScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showCreateDialog = true }) {
+            FloatingActionButton(onClick = onOpenCreateForm) {
                 Text("+", style = MaterialTheme.typography.headlineSmall)
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
-        Box(
+        PullToRefreshBox(
+            isRefreshing = state.isLoading && state.boards.isNotEmpty(),
+            onRefresh = onRefresh,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
         ) {
             when {
-                state.isLoading && state.boards.isEmpty() -> CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
+                state.isLoading && state.boards.isEmpty() -> Box(modifier = Modifier.fillMaxSize()) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+                loadError != null && state.boards.isEmpty() -> LoadErrorMessage(
+                    error = loadError,
+                    onRetry = onRefresh,
                 )
-                state.boards.isEmpty() -> Text(
+                state.boards.isEmpty() -> FullScreenMessage(
                     text = stringResource(R.string.boards_empty),
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(32.dp),
-                    style = MaterialTheme.typography.bodyLarge,
                 )
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -145,13 +163,12 @@ fun BoardsScreen(
         }
     }
 
-    if (showCreateDialog) {
+    if (state.isCreateFormOpen) {
         CreateBoardDialog(
-            onDismiss = { showCreateDialog = false },
-            onCreate = { board ->
-                showCreateDialog = false
-                onCreate(board)
-            },
+            isCreating = state.isCreating,
+            error = state.createError,
+            onDismiss = onCloseCreateForm,
+            onCreate = onCreate,
         )
     }
 
@@ -205,7 +222,12 @@ private fun BoardCard(board: Board, onClick: () -> Unit, onDelete: () -> Unit) {
 }
 
 @Composable
-private fun CreateBoardDialog(onDismiss: () -> Unit, onCreate: (NewBoard) -> Unit) {
+private fun CreateBoardDialog(
+    isCreating: Boolean,
+    error: AppError?,
+    onDismiss: () -> Unit,
+    onCreate: (NewBoard) -> Unit,
+) {
     var name by remember { mutableStateOf("") }
     var color by remember { mutableStateOf(BoardColors.first()) }
 
@@ -219,6 +241,8 @@ private fun CreateBoardDialog(onDismiss: () -> Unit, onCreate: (NewBoard) -> Uni
                     onValueChange = { name = it },
                     label = { Text(stringResource(R.string.boards_name_label)) },
                     singleLine = true,
+                    enabled = !isCreating,
+                    isError = error != null,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(16.dp))
@@ -238,15 +262,30 @@ private fun CreateBoardDialog(onDismiss: () -> Unit, onCreate: (NewBoard) -> Uni
                                     color = MaterialTheme.colorScheme.onSurface,
                                     shape = CircleShape,
                                 )
-                                .clickable { color = option },
+                                .clickable(enabled = !isCreating) { color = option },
                         )
                     }
+                }
+                if (error != null) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = error.asMessage(),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onCreate(NewBoard(name = name, color = color)) }) {
-                Text(stringResource(R.string.action_create))
+            TextButton(
+                onClick = { onCreate(NewBoard(name = name, color = color)) },
+                enabled = !isCreating,
+            ) {
+                if (isCreating) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    Text(stringResource(R.string.action_create))
+                }
             }
         },
         dismissButton = {
@@ -271,6 +310,9 @@ private fun BoardsScreenPreview() {
                 ),
             ),
             onBoardClick = {},
+            onRefresh = {},
+            onOpenCreateForm = {},
+            onCloseCreateForm = {},
             onCreate = {},
             onDelete = {},
             onErrorShown = {},

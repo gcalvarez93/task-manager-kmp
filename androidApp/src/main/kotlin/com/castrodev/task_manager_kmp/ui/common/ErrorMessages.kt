@@ -8,13 +8,20 @@ import androidx.compose.ui.res.stringResource
 import com.castrodev.task_manager_kmp.R
 import com.castrodev.task_manager_kmp.core.AppError
 
-/** Texto para el usuario de un [AppError]. Los mensajes de validacion ya vienen redactados. */
+/**
+ * Texto para el usuario de un [AppError].
+ * Los mensajes de validacion ya vienen redactados por la app. Lo que responde el servidor
+ * ([AppError.Rejected], [AppError.Server]) nunca se muestra: va a los logs.
+ */
 @Composable
 fun AppError.asMessage(): String = when (this) {
     is AppError.Validation -> message
     is AppError.Unauthorized -> stringResource(R.string.error_unauthorized)
     is AppError.NotFound -> stringResource(R.string.error_not_found)
     is AppError.Network -> stringResource(R.string.error_network)
+    is AppError.Timeout -> stringResource(R.string.error_timeout)
+    is AppError.Rejected -> stringResource(R.string.error_rejected)
+    is AppError.Server -> stringResource(R.string.error_server)
     else -> stringResource(R.string.error_generic)
 }
 

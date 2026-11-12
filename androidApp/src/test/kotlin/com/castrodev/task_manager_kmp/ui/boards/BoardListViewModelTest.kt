@@ -16,6 +16,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -65,30 +66,75 @@ class BoardListViewModelTest {
 
         val viewModel = viewModel()
 
-        assertTrue(viewModel.state.value.error is AppError.Network)
+        assertTrue(viewModel.state.value.loadError is AppError.Network)
+        assertNull(viewModel.state.value.error)
         assertTrue(viewModel.state.value.boards.isEmpty())
     }
 
     @Test
-    fun `create adds the new board to the list`() {
+    fun `refresh retries the load after a failure`() {
+        coEvery { repository.getBoards() } returns AppResult.Failure(AppError.Timeout)
+        val viewModel = viewModel()
+        assertEquals(AppError.Timeout, viewModel.state.value.loadError)
+
+        coEvery { repository.getBoards() } returns AppResult.Success(listOf(board("1")))
+        viewModel.refresh()
+
+        assertNull(viewModel.state.value.loadError)
+        assertEquals(listOf("1"), viewModel.state.value.boards.map { it.id })
+    }
+
+    @Test
+    fun `create adds the new board to the list and closes the form`() {
         coEvery { repository.getBoards() } returns AppResult.Success(emptyList())
         coEvery { repository.createBoard(any()) } returns AppResult.Success(board("new", "Casa"))
         val viewModel = viewModel()
+        viewModel.openCreateForm()
 
         viewModel.create(NewBoard(name = "Casa", color = "#FF9800"))
 
         assertEquals(listOf("new"), viewModel.state.value.boards.map { it.id })
+        assertFalse(viewModel.state.value.isCreateFormOpen)
     }
 
     @Test
-    fun `create with a blank name exposes a validation error and does not call the repository`() {
+    fun `create with a blank name keeps the form open and does not call the repository`() {
         coEvery { repository.getBoards() } returns AppResult.Success(emptyList())
         val viewModel = viewModel()
+        viewModel.openCreateForm()
 
         viewModel.create(NewBoard(name = "   ", color = "#FF9800"))
 
-        assertTrue(viewModel.state.value.error is AppError.Validation)
+        assertTrue(viewModel.state.value.createError is AppError.Validation)
+        assertTrue(viewModel.state.value.isCreateFormOpen)
         coVerify(exactly = 0) { repository.createBoard(any()) }
+    }
+
+    @Test
+    fun `create failure keeps the form open with the error`() {
+        coEvery { repository.getBoards() } returns AppResult.Success(emptyList())
+        coEvery { repository.createBoard(any()) } returns AppResult.Failure(AppError.Timeout)
+        val viewModel = viewModel()
+        viewModel.openCreateForm()
+
+        viewModel.create(NewBoard(name = "Casa", color = "#FF9800"))
+
+        assertEquals(AppError.Timeout, viewModel.state.value.createError)
+        assertTrue(viewModel.state.value.isCreateFormOpen)
+        assertTrue(viewModel.state.value.boards.isEmpty())
+    }
+
+    @Test
+    fun `closeCreateForm closes the form and discards its error`() {
+        coEvery { repository.getBoards() } returns AppResult.Success(emptyList())
+        val viewModel = viewModel()
+        viewModel.openCreateForm()
+        viewModel.create(NewBoard(name = "  ", color = "#FF9800"))
+
+        viewModel.closeCreateForm()
+
+        assertFalse(viewModel.state.value.isCreateFormOpen)
+        assertNull(viewModel.state.value.createError)
     }
 
     @Test
@@ -104,8 +150,11 @@ class BoardListViewModelTest {
 
     @Test
     fun `clearError removes the pending error`() {
-        coEvery { repository.getBoards() } returns AppResult.Failure(AppError.Unauthorized)
+        coEvery { repository.getBoards() } returns AppResult.Success(listOf(board("1")))
+        coEvery { repository.deleteBoard("1") } returns AppResult.Failure(AppError.Unauthorized)
         val viewModel = viewModel()
+        viewModel.delete("1")
+        assertEquals(AppError.Unauthorized, viewModel.state.value.error)
 
         viewModel.clearError()
 

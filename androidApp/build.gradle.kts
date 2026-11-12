@@ -30,6 +30,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.kotlinx.coroutines.playServices)
+    implementation(libs.timber)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)

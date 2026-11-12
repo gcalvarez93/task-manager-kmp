@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -24,6 +25,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -44,12 +46,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.castrodev.task_manager_kmp.AppContainer
 import com.castrodev.task_manager_kmp.R
+import com.castrodev.task_manager_kmp.core.AppError
 import com.castrodev.task_manager_kmp.domain.model.NewTask
 import com.castrodev.task_manager_kmp.domain.model.TaskItem
 import com.castrodev.task_manager_kmp.domain.model.TaskPriority
 import com.castrodev.task_manager_kmp.domain.model.TaskStatus
 import com.castrodev.task_manager_kmp.presentation.tasks.TaskListState
 import com.castrodev.task_manager_kmp.ui.common.ErrorSnackbarEffect
+import com.castrodev.task_manager_kmp.ui.common.FullScreenMessage
+import com.castrodev.task_manager_kmp.ui.common.LoadErrorMessage
+import com.castrodev.task_manager_kmp.ui.common.asMessage
 import kotlin.time.Instant
 
 @StringRes
@@ -76,31 +82,42 @@ fun TasksRoute(container: AppContainer, boardId: String, onBack: () -> Unit) {
         state = state,
         boardId = boardId,
         onBack = onBack,
+        onRefresh = viewModel::refresh,
         onFilterChange = viewModel::setFilter,
         onChangeStatus = viewModel::changeStatus,
         onDelete = viewModel::delete,
+        onOpenCreateForm = viewModel::openCreateForm,
+        onCloseCreateForm = viewModel::closeCreateForm,
         onCreate = viewModel::create,
         onErrorShown = viewModel::clearError,
     )
 }
 
-/** Pantalla de las tareas de un tablero. Solo guarda estado de dialogos. */
+/**
+ * Pantalla de las tareas de un tablero. Solo guarda lo que se escribe en el formulario y el dialogo de borrar.
+ * El formulario de crear esta abierto mientras [TaskListState.isCreateFormOpen] sea `true`:
+ * si crear falla sigue abierto y conserva lo escrito.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TasksScreen(
     state: TaskListState,
     boardId: String,
     onBack: () -> Unit,
+    onRefresh: () -> Unit,
     onFilterChange: (TaskStatus?) -> Unit,
     onChangeStatus: (TaskItem, TaskStatus) -> Unit,
     onDelete: (String) -> Unit,
+    onOpenCreateForm: () -> Unit,
+    onCloseCreateForm: () -> Unit,
     onCreate: (NewTask) -> Unit,
     onErrorShown: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    var showCreateDialog by remember { mutableStateOf(false) }
     var taskToDelete by remember { mutableStateOf<TaskItem?>(null) }
+    // Copia local: `state` viene de otro modulo y Kotlin no permite hacer smart cast sobre sus propiedades.
+    val loadError = state.loadError
 
     ErrorSnackbarEffect(state.error, snackbarHostState, onErrorShown)
 
@@ -115,7 +132,7 @@ fun TasksScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showCreateDialog = true }) {
+            FloatingActionButton(onClick = onOpenCreateForm) {
                 Text("+", style = MaterialTheme.typography.headlineSmall)
             }
         },
@@ -128,17 +145,21 @@ fun TasksScreen(
         ) {
             FilterRow(selected = state.filter, onSelected = onFilterChange)
 
-            Box(modifier = Modifier.fillMaxSize()) {
+            PullToRefreshBox(
+                isRefreshing = state.isLoading && state.allTasks.isNotEmpty(),
+                onRefresh = onRefresh,
+                modifier = Modifier.fillMaxSize(),
+            ) {
                 when {
-                    state.isLoading && state.allTasks.isEmpty() -> CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
+                    state.isLoading && state.allTasks.isEmpty() -> Box(modifier = Modifier.fillMaxSize()) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                    loadError != null && state.allTasks.isEmpty() -> LoadErrorMessage(
+                        error = loadError,
+                        onRetry = onRefresh,
                     )
-                    state.visibleTasks.isEmpty() -> Text(
+                    state.visibleTasks.isEmpty() -> FullScreenMessage(
                         text = stringResource(R.string.tasks_empty),
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(32.dp),
-                        style = MaterialTheme.typography.bodyLarge,
                     )
                     else -> LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -158,11 +179,12 @@ fun TasksScreen(
         }
     }
 
-    if (showCreateDialog) {
+    if (state.isCreateFormOpen) {
         CreateTaskDialog(
-            onDismiss = { showCreateDialog = false },
+            isCreating = state.isCreating,
+            error = state.createError,
+            onDismiss = onCloseCreateForm,
             onCreate = { title, priority ->
-                showCreateDialog = false
                 onCreate(NewTask(boardId = boardId, title = title, priority = priority))
             },
         )
@@ -259,6 +281,8 @@ private fun TaskCard(
 
 @Composable
 private fun CreateTaskDialog(
+    isCreating: Boolean,
+    error: AppError?,
     onDismiss: () -> Unit,
     onCreate: (title: String, priority: TaskPriority) -> Unit,
 ) {
@@ -275,6 +299,8 @@ private fun CreateTaskDialog(
                     onValueChange = { title = it },
                     label = { Text(stringResource(R.string.tasks_title_label)) },
                     singleLine = true,
+                    enabled = !isCreating,
+                    isError = error != null,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(16.dp))
@@ -288,15 +314,28 @@ private fun CreateTaskDialog(
                         FilterChip(
                             selected = option == priority,
                             onClick = { priority = option },
+                            enabled = !isCreating,
                             label = { Text(stringResource(option.label())) },
                         )
                     }
                 }
+                if (error != null) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = error.asMessage(),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onCreate(title, priority) }) {
-                Text(stringResource(R.string.action_create))
+            TextButton(onClick = { onCreate(title, priority) }, enabled = !isCreating) {
+                if (isCreating) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    Text(stringResource(R.string.action_create))
+                }
             }
         },
         dismissButton = {
@@ -324,9 +363,12 @@ private fun TasksScreenPreview() {
             state = TaskListState(allTasks = listOf(task), visibleTasks = listOf(task)),
             boardId = "b1",
             onBack = {},
+            onRefresh = {},
             onFilterChange = {},
             onChangeStatus = { _, _ -> },
             onDelete = {},
+            onOpenCreateForm = {},
+            onCloseCreateForm = {},
             onCreate = {},
             onErrorShown = {},
         )

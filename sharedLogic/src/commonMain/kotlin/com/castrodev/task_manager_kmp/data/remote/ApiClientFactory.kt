@@ -4,13 +4,29 @@ package com.castrodev.task_manager_kmp.data.remote
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.DefaultRequest
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 
-/** Configuracion comun del cliente: JSON, URL base y token. Se reutiliza en los tests con un motor falso. */
+private const val REQUEST_TIMEOUT_MILLIS = 30_000L
+private const val CONNECT_TIMEOUT_MILLIS = 10_000L
+private const val SOCKET_TIMEOUT_MILLIS = 30_000L
+
+/**
+ * Configuracion comun del cliente: JSON, URL base, timeouts y token.
+ * Se reutiliza en los tests con un motor falso.
+ *
+ * Los timeouts son explicitos para que una red que no responde acabe en un error tipado
+ * ([com.castrodev.task_manager_kmp.core.AppError.Timeout]) y no dependa del valor por defecto de cada motor.
+ */
 internal fun HttpClientConfig<*>.configureApi(baseUrl: String, tokenProvider: TokenProvider) {
     install(ContentNegotiation) {
         json(apiJson)
+    }
+    install(HttpTimeout) {
+        requestTimeoutMillis = REQUEST_TIMEOUT_MILLIS
+        connectTimeoutMillis = CONNECT_TIMEOUT_MILLIS
+        socketTimeoutMillis = SOCKET_TIMEOUT_MILLIS
     }
     install(DefaultRequest) {
         url(baseUrl)

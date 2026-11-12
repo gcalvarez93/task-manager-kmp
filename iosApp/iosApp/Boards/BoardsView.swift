@@ -8,7 +8,6 @@ struct BoardsView: View {
     let onBoardTap: (Board) -> Void
     let onSignOut: () -> Void
     @State private var viewModel: BoardsViewModel
-    @State private var showCreateSheet = false
     @State private var boardToDelete: Board?
 
     init(
@@ -24,57 +23,77 @@ struct BoardsView: View {
     var body: some View {
         let state = viewModel.state
         content(state)
-            .navigationTitle("Tableros")
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cerrar sesión", action: onSignOut)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showCreateSheet = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityLabel("Nuevo tablero")
-                    .accessibilityIdentifier("boards_add_button")
-                }
+        .navigationTitle("Tableros")
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Cerrar sesión", action: onSignOut)
             }
-            .task { viewModel.refresh() }
-            .sheet(isPresented: $showCreateSheet) {
-                CreateBoardSheet { name, color in
-                    viewModel.create(name: name, color: color)
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    viewModel.openCreateForm()
+                } label: {
+                    Image(systemName: "plus")
                 }
+                .accessibilityLabel("Nuevo tablero")
+                .accessibilityIdentifier("boards_add_button")
             }
-            .confirmationDialog(
-                "Eliminar tablero",
-                isPresented: Binding(
-                    get: { boardToDelete != nil },
-                    set: { isPresented in
-                        if !isPresented { boardToDelete = nil }
-                    }
-                ),
-                titleVisibility: .visible,
-                presenting: boardToDelete
-            ) { board in
-                Button("Eliminar", role: .destructive) {
-                    viewModel.delete(id: board.id)
+        }
+        .task { viewModel.refresh() }
+        .sheet(
+            isPresented: Binding(
+                get: { viewModel.state.isCreateFormOpen },
+                set: { isPresented in
+                    if !isPresented { viewModel.closeCreateForm() }
                 }
-            } message: { board in
-                Text("Se eliminará el tablero «\(board.name)». Esta acción no se puede deshacer.")
+            )
+        ) {
+            CreateBoardSheet(
+                isCreating: viewModel.state.isCreating,
+                error: viewModel.state.createError,
+                onCancel: viewModel.closeCreateForm,
+                onCreate: { name, color in viewModel.create(name: name, color: color) }
+            )
+        }
+        .confirmationDialog(
+            "Eliminar tablero",
+            isPresented: Binding(
+                get: { boardToDelete != nil },
+                set: { isPresented in
+                    if !isPresented { boardToDelete = nil }
+                }
+            ),
+            titleVisibility: .visible,
+            presenting: boardToDelete
+        ) { board in
+            Button("Eliminar", role: .destructive) {
+                viewModel.delete(id: board.id)
             }
-            .errorAlert(state.error, onDismiss: viewModel.clearError)
+        } message: { board in
+            Text("Se eliminará el tablero «\(board.name)». Esta acción no se puede deshacer.")
+        }
+        .errorAlert(state.error, onDismiss: viewModel.clearError)
     }
 
     @ViewBuilder
     private func content(_ state: BoardListState) -> some View {
         if state.isLoading && state.boards.isEmpty {
             ProgressView()
+        } else if let loadError = state.loadError, state.boards.isEmpty {
+            RefreshableMessage(onRefresh: { await viewModel.refreshAndWait() }) {
+                LoadErrorView(
+                    title: "No se han podido cargar los tableros",
+                    error: loadError,
+                    onRetry: viewModel.refresh
+                )
+            }
         } else if state.boards.isEmpty {
-            ContentUnavailableView(
-                "Aún no tienes tableros",
-                systemImage: "tray",
-                description: Text("Crea el primero con el botón +")
-            )
+            RefreshableMessage(onRefresh: { await viewModel.refreshAndWait() }) {
+                ContentUnavailableView(
+                    "Aún no tienes tableros",
+                    systemImage: "tray",
+                    description: Text("Crea el primero con el botón +")
+                )
+            }
         } else {
             List(state.boards, id: \.id) { board in
                 Button {
@@ -91,6 +110,7 @@ struct BoardsView: View {
                     }
                 }
             }
+            .refreshable { await viewModel.refreshAndWait() }
         }
     }
 }
@@ -124,47 +144,61 @@ private struct CreateBoardSheet: View {
 
     private static let colors = ["#FF9800", "#F44336", "#4CAF50", "#2196F3", "#9C27B0"]
 
+    let isCreating: Bool
+    let error: (any AppError)?
+    let onCancel: () -> Void
     let onCreate: (String, String) -> Void
-    @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var color = CreateBoardSheet.colors[0]
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Nombre") {
+                Section {
                     TextField("Nombre", text: $name)
+                        .disabled(isCreating)
                         .accessibilityIdentifier("board_name_field")
+                } header: {
+                    Text("Nombre")
+                } footer: {
+                    if let error {
+                        Text(userMessage(for: error))
+                            .foregroundStyle(.red)
+                            .accessibilityIdentifier("board_create_error")
+                    }
                 }
                 Section("Color") {
                     HStack(spacing: 16) {
                         ForEach(Self.colors, id: \.self) { option in
                             Circle()
-                                .fill(Color(hex: option))
-                                .frame(width: 32, height: 32)
-                                .overlay {
-                                    if option == color {
-                                        Circle().stroke(.primary, lineWidth: 3)
-                                    }
+                            .fill(Color(hex: option))
+                            .frame(width: 32, height: 32)
+                            .overlay {
+                                if option == color {
+                                    Circle().stroke(.primary, lineWidth: 3)
                                 }
-                                .onTapGesture { color = option }
+                            }
+                            .onTapGesture { if !isCreating { color = option } }
                         }
                     }
                     .padding(.vertical, 4)
                 }
             }
+            .interactiveDismissDisabled(isCreating)
             .navigationTitle("Nuevo tablero")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancelar") { dismiss() }
+                    Button("Cancelar", action: onCancel)
+                        .disabled(isCreating)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Crear") {
-                        onCreate(name, color)
-                        dismiss()
+                    if isCreating {
+                        ProgressView()
+                    } else {
+                        Button("Crear") { onCreate(name, color) }
+                        .accessibilityIdentifier("board_create_button")
                     }
-                    .accessibilityIdentifier("board_create_button")
                 }
             }
         }

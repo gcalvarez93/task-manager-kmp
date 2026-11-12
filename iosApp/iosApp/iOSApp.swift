@@ -1,5 +1,6 @@
 // Path: iosApp/iosApp/iOSApp.swift
 import FirebaseCore
+import Logging
 import SharedLogic
 import SwiftUI
 
@@ -18,7 +19,8 @@ struct iOSApp: App {
         container = AppContainer(
             baseUrl: AppConfig.apiBaseURL,
             tokenProvider: FirebaseTokenProvider(),
-            authRepository: authRepository
+            authRepository: authRepository,
+            logger: SwiftLogErrorLogger()
         )
     }
 
@@ -26,5 +28,16 @@ struct iOSApp: App {
         WindowGroup {
             RootView(container: container)
         }
+    }
+}
+
+/// Lleva los errores del módulo compartido a swift-log. El detalle técnico va aquí y nunca a la pantalla.
+/// Está en este archivo para no tener que añadir uno nuevo al target de Xcode.
+final class SwiftLogErrorLogger: NSObject, ErrorLogger, @unchecked Sendable {
+
+    private let logger = Logger(label: "com.castrodev.taskmanagerkmp.shared")
+
+    func warn(message: String) {
+        logger.warning("\(message)")
     }
 }

@@ -13,12 +13,14 @@ import kotlin.time.Instant
  * Repositorio de tableros en memoria para los tests.
  * - [failWith]: si no es `null`, todas las operaciones devuelven ese error.
  * - [gate]: si no es `null`, [getBoards] espera a que se complete (para observar el estado de carga).
+ * - [createGate]: si no es `null`, [createBoard] espera a que se complete (para observar el intento de crear en curso).
  */
 internal class FakeBoardRepository(initial: List<Board> = emptyList()) : BoardRepository {
     val boards: MutableList<Board> = initial.toMutableList()
     val created = mutableListOf<NewBoard>()
     var failWith: AppError? = null
     var gate: CompletableDeferred<Unit>? = null
+    var createGate: CompletableDeferred<Unit>? = null
 
     override suspend fun getBoards(): AppResult<List<Board>> {
         gate?.await()
@@ -27,6 +29,7 @@ internal class FakeBoardRepository(initial: List<Board> = emptyList()) : BoardRe
     }
 
     override suspend fun createBoard(board: NewBoard): AppResult<Board> {
+        createGate?.await()
         failWith?.let { return AppResult.Failure(it) }
         created += board
         val item = boardItem(id = "created-${created.size}", name = board.name, color = board.color)

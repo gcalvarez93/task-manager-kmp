@@ -15,12 +15,14 @@ import kotlin.time.Instant
  * Repositorio en memoria para los tests.
  * - [failWith]: si no es `null`, todas las operaciones devuelven ese error.
  * - [gate]: si no es `null`, [getTasks] espera a que se complete (para observar el estado de carga).
+ * - [createGate]: si no es `null`, [createTask] espera a que se complete (para observar el intento de crear en curso).
  */
 internal class FakeTaskRepository(initial: List<TaskItem> = emptyList()) : TaskRepository {
     val tasks: MutableList<TaskItem> = initial.toMutableList()
     val created = mutableListOf<NewTask>()
     var failWith: AppError? = null
     var gate: CompletableDeferred<Unit>? = null
+    var createGate: CompletableDeferred<Unit>? = null
 
     override suspend fun getTasks(boardId: String?): AppResult<List<TaskItem>> {
         gate?.await()
@@ -29,6 +31,7 @@ internal class FakeTaskRepository(initial: List<TaskItem> = emptyList()) : TaskR
     }
 
     override suspend fun createTask(task: NewTask): AppResult<TaskItem> {
+        createGate?.await()
         failWith?.let { return AppResult.Failure(it) }
         created += task
         val item = taskItem(id = "created-${created.size}", title = task.title, boardId = task.boardId)

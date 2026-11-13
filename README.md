@@ -106,6 +106,7 @@ Deliberate technical debt, documented rather than hidden:
 - **Backend (Tasks module).** `castrodev-api` answers `500` instead of `404` when a task or board does not exist (an unhandled `KeyNotFoundException`) and does not use `ProblemDetails` there yet, so the app can only show a generic server error for that case.
 - **Repeated taps.** Creating is protected against double submission; deleting and changing a task's status are not.
 - **Language.** The UI is Spanish only; strings are not localized yet.
+- **Release build not minified.** `isMinifyEnabled` is off in the Android release build, so R8 does not shrink or obfuscate it.
 
 ### Other projects in this portfolio
 
@@ -282,6 +283,7 @@ Deuda técnica asumida a propósito, documentada en lugar de ocultada:
 - **Backend (módulo Tasks).** `castrodev-api` responde `500` en lugar de `404` cuando una tarea o un tablero no existe (una `KeyNotFoundException` sin controlar) y aún no usa `ProblemDetails` ahí, así que la app solo puede mostrar un error genérico de servidor en ese caso.
 - **Toques repetidos.** Crear está protegido contra el doble envío; borrar y cambiar el estado de una tarea, no.
 - **Idioma.** La interfaz está solo en español; los textos aún no están localizados.
+- **Build de release sin minificar.** `isMinifyEnabled` está desactivado en la build de release de Android, así que R8 no la reduce ni la ofusca.
 
 ### Otros proyectos del portfolio
 

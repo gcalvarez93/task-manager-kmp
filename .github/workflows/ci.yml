@@ -86,3 +86,61 @@ jobs:
             **/build/reports/tests/
             **/build/test-results/
           if-no-files-found: ignore
+
+  # Comprueba que la build de release compila con R8 (minificación y ofuscación) sin cambiar
+  # nada en el repo: `isMinifyEnabled` sigue en false en build.gradle.kts. No bloquea el
+  # workflow (continue-on-error): sirve para saber qué rompería activar R8 de verdad.
+  android-release-r8:
+    name: Release build with R8 (check)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Accept Android SDK licenses
+        uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      # Script de inicialización solo para esta ejecución: activa R8 en la build de release
+      # después de evaluar el build.gradle.kts de la app.
+      - name: Enable R8 for this run only
+        run: |
+          cat > "$RUNNER_TEMP/enable-r8.init.gradle" <<'INIT'
+          allprojects {
+              afterEvaluate { project ->
+                  if (project.plugins.hasPlugin('com.android.application')) {
+                      project.android.buildTypes.release.minifyEnabled = true
+                  }
+              }
+          }
+          INIT
+
+      - name: Assemble release with R8
+        run: ./gradlew :androidApp:assembleRelease -I "$RUNNER_TEMP/enable-r8.init.gradle" --stacktrace
+
+      # Si R8 no se ha ejecutado, no existe mapping.txt: así un verde no puede ser falso.
+      - name: Check that R8 actually ran
+        run: |
+          MAPPING=androidApp/build/outputs/mapping/release/mapping.txt
+          test -f "$MAPPING" || { echo "R8 did not run: $MAPPING not found"; exit 1; }
+          echo "R8 ran. mapping.txt: $(wc -l < "$MAPPING") lines" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload R8 mapping
+        uses: actions/upload-artifact@v4
+        with:
+          name: r8-mapping
+          path: androidApp/build/outputs/mapping/release/
+          retention-days: 7

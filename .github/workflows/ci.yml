@@ -50,6 +50,33 @@ jobs:
       - name: Build debug APK
         run: ./gradlew :androidApp:assembleDebug --stacktrace
 
+      # Cuenta los tests ejecutados a partir de los informes JUnit y los muestra en el resumen
+      # del job, para comprobar que se han ejecutado de verdad y no solo que el paso termine en verde.
+      - name: Test summary
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import glob, os
+          import xml.etree.ElementTree as ET
+          rows = {}
+          for path in glob.glob("**/build/test-results/**/*.xml", recursive=True):
+              module = path.split("/build/")[0]
+              suite = ET.parse(path).getroot()
+              total, failed, skipped = rows.get(module, (0, 0, 0))
+              rows[module] = (
+                  total + int(suite.get("tests", 0)),
+                  failed + int(suite.get("failures", 0)) + int(suite.get("errors", 0)),
+                  skipped + int(suite.get("skipped", 0)),
+              )
+          print("### Tests ejecutados\n")
+          print("| Módulo | Tests | Fallos | Omitidos |")
+          print("|---|---|---|---|")
+          for module, (total, failed, skipped) in sorted(rows.items()):
+              print(f"| {module} | {total} | {failed} | {skipped} |")
+          print(f"\n**Total: {sum(r[0] for r in rows.values())}**")
+          PY
+
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4

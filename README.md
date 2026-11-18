@@ -1,5 +1,7 @@
 # Task Manager KMP
 
+[![CI](https://github.com/gcalvarez93/task-manager-kmp/actions/workflows/ci.yml/badge.svg)](https://github.com/gcalvarez93/task-manager-kmp/actions/workflows/ci.yml)
+
 A board-based task manager built with **Kotlin Multiplatform**. Networking, business rules and screen state are written once in Kotlin; each platform keeps a fully **native UI** — Jetpack Compose on Android and SwiftUI on iOS.
 
 ---
@@ -183,6 +185,8 @@ xcodebuild test -project iosApp.xcodeproj -scheme iosApp \
   -destination 'platform=iOS Simulator,name=iPhone 18 Pro'
 ```
 
+**Continuous integration.** A GitHub Actions workflow runs the Kotlin tests (shared logic and Android unit tests) and builds the debug APK on every push and pull request. The iOS tests are not part of it yet and are run locally.
+
 ---
 
 ## 🔗 Related
@@ -200,6 +204,8 @@ MIT © Gabriel Castro
 ---
 
 # Task Manager KMP
+
+[![CI](https://github.com/gcalvarez93/task-manager-kmp/actions/workflows/ci.yml/badge.svg)](https://github.com/gcalvarez93/task-manager-kmp/actions/workflows/ci.yml)
 
 App de gestión de tareas por tableros construida con **Kotlin Multiplatform**. La red, las reglas de negocio y el estado de las pantallas se escriben una sola vez en Kotlin; cada plataforma conserva una **UI totalmente nativa**: Jetpack Compose en Android y SwiftUI en iOS.
 
@@ -359,6 +365,8 @@ cd iosApp
 xcodebuild test -project iosApp.xcodeproj -scheme iosApp \
   -destination 'platform=iOS Simulator,name=iPhone 18 Pro'
 ```
+
+**Integración continua.** Un workflow de GitHub Actions ejecuta los tests de Kotlin (lógica compartida y tests unitarios de Android) y compila el APK de debug en cada push y pull request. Los tests de iOS todavía no forman parte de él y se ejecutan en local.
 
 ---
 

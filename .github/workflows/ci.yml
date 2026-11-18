@@ -199,3 +199,61 @@ jobs:
           name: ios-test-results
           path: ${{ runner.temp }}/ios-tests.xcresult
           retention-days: 7
+
+  # AAB de release firmado, solo en push a main (los PR, sobre todo de forks, no reciben
+  # secretos). Usa un keystore de demostración guardado en secretos del repositorio; no es una
+  # clave de publicación en Google Play.
+  android-release-signed:
+    name: Signed release bundle
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Accept Android SDK licenses
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Restore keystore from secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64" || { echo "Missing secret RELEASE_KEYSTORE_BASE64"; exit 1; }
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          echo "RELEASE_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Bundle release
+        env:
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: ./gradlew :androidApp:bundleRelease --stacktrace
+
+      # Comprueba que el AAB está firmado con nuestro certificado y no sin firmar.
+      - name: Verify signature
+        run: |
+          AAB=androidApp/build/outputs/bundle/release/androidApp-release.aab
+          test -f "$AAB" || { echo "AAB not found: $AAB"; exit 1; }
+          jarsigner -verify "$AAB" | tee "$RUNNER_TEMP/verify.txt"
+          grep -q "jar verified" "$RUNNER_TEMP/verify.txt"
+          echo "Signed AAB: $(du -h "$AAB" | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-aab
+          path: androidApp/build/outputs/bundle/release/*.aab
+          retention-days: 14

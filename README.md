@@ -185,7 +185,7 @@ xcodebuild test -project iosApp.xcodeproj -scheme iosApp \
   -destination 'platform=iOS Simulator,name=iPhone 18 Pro'
 ```
 
-**Continuous integration.** A GitHub Actions workflow runs on every push and pull request: the Kotlin tests (shared logic and Android unit tests), the debug APK build, a release build with R8 enabled for that run only (to check that minification compiles; the app itself is still not minified), and the iOS unit tests on macOS. The iOS UI tests are not part of it and are run locally.
+**Continuous integration.** A GitHub Actions workflow runs on every push and pull request: the Kotlin tests (shared logic and Android unit tests), the debug APK build, a release build with R8 enabled for that run only (to check that minification compiles; the app itself is still not minified), and the iOS unit tests on macOS. On pushes to `main` it also builds a release app bundle (AAB) signed with a demo keystore stored in repository secrets, and verifies the signature. The iOS UI tests are not part of it and are run locally.
 
 ---
 
@@ -366,7 +366,7 @@ xcodebuild test -project iosApp.xcodeproj -scheme iosApp \
   -destination 'platform=iOS Simulator,name=iPhone 18 Pro'
 ```
 
-**Integración continua.** Un workflow de GitHub Actions se ejecuta en cada push y pull request: los tests de Kotlin (lógica compartida y tests unitarios de Android), la compilación del APK de debug, una build de release con R8 activado solo en esa ejecución (para comprobar que la minificación compila; la app en sí sigue sin minificar) y los tests unitarios de iOS en macOS. Los tests de UI de iOS no forman parte de él y se ejecutan en local.
+**Integración continua.** Un workflow de GitHub Actions se ejecuta en cada push y pull request: los tests de Kotlin (lógica compartida y tests unitarios de Android), la compilación del APK de debug, una build de release con R8 activado solo en esa ejecución (para comprobar que la minificación compila; la app en sí sigue sin minificar) y los tests unitarios de iOS en macOS. En los push a `main` también genera un paquete de release (AAB) firmado con un keystore de demostración guardado en los secretos del repositorio, y verifica la firma. Los tests de UI de iOS no forman parte de él y se ejecutan en local.
 
 ---
 

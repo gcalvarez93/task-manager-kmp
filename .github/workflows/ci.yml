@@ -34,12 +34,12 @@ jobs:
       # AGP pueda descargar la plataforma que falte. `packages: ''` evita instalar el paquete
       # obsoleto "tools", que es el que hacía fallar este paso.
       - name: Accept Android SDK licenses
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           packages: ''
 
       - name: Set up Gradle (with cache)
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Shared logic tests
         run: ./gradlew :sharedLogic:allTests --stacktrace
@@ -79,7 +79,7 @@ jobs:
 
       - name: Upload test reports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-reports
           path: |
@@ -88,13 +88,11 @@ jobs:
           if-no-files-found: ignore
 
   # Comprueba que la build de release compila con R8 (minificación y ofuscación) sin cambiar
-  # nada en el repo: `isMinifyEnabled` sigue en false en build.gradle.kts. No bloquea el
-  # workflow (continue-on-error): sirve para saber qué rompería activar R8 de verdad.
+  # nada en el repo: `isMinifyEnabled` sigue en false en build.gradle.kts.
   android-release-r8:
     name: Release build with R8 (check)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -107,12 +105,12 @@ jobs:
           java-version: 21
 
       - name: Accept Android SDK licenses
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           packages: ''
 
       - name: Set up Gradle (with cache)
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       # Script de inicialización solo para esta ejecución: activa R8 en la build de release
       # después de evaluar el build.gradle.kts de la app.
@@ -139,8 +137,65 @@ jobs:
           echo "R8 ran. mapping.txt: $(wc -l < "$MAPPING") lines" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Upload R8 mapping
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: r8-mapping
           path: androidApp/build/outputs/mapping/release/
+          retention-days: 7
+
+  # Tests unitarios de iOS (XCTest). Necesita macOS: compila el framework de Kotlin con Gradle
+  # (script de build de Xcode) y ejecuta iosAppTests en un simulador. Los tests de UI no se
+  # ejecutan aquí.
+  ios-tests:
+    name: iOS unit tests
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Show Xcode, schemes and simulators
+        working-directory: iosApp
+        run: |
+          xcodebuild -version
+          xcodebuild -list -project iosApp.xcodeproj
+          xcrun simctl list devices available
+
+      # El nombre del simulador depende de la versión de Xcode del runner: se elige el primer
+      # iPhone disponible en lugar de fijar uno.
+      - name: Pick an iPhone simulator
+        run: |
+          UDID=$(xcrun simctl list devices available iPhone | grep -Eo '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}' | head -n 1)
+          test -n "$UDID" || { echo "No iPhone simulator available"; exit 1; }
+          echo "SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
+          echo "Using simulator $UDID"
+
+      - name: Run iOS unit tests
+        working-directory: iosApp
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project iosApp.xcodeproj \
+            -scheme iosApp \
+            -destination "id=$SIMULATOR_UDID" \
+            -only-testing:iosAppTests \
+            -resultBundlePath "$RUNNER_TEMP/ios-tests.xcresult" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ios-test-results
+          path: ${{ runner.temp }}/ios-tests.xcresult
           retention-days: 7

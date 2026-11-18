@@ -185,7 +185,7 @@ xcodebuild test -project iosApp.xcodeproj -scheme iosApp \
   -destination 'platform=iOS Simulator,name=iPhone 18 Pro'
 ```
 
-**Continuous integration.** A GitHub Actions workflow runs the Kotlin tests (shared logic and Android unit tests) and builds the debug APK on every push and pull request. The iOS tests are not part of it yet and are run locally.
+**Continuous integration.** A GitHub Actions workflow runs on every push and pull request: the Kotlin tests (shared logic and Android unit tests), the debug APK build, a release build with R8 enabled for that run only (to check that minification compiles; the app itself is still not minified), and the iOS unit tests on macOS. The iOS UI tests are not part of it and are run locally.
 
 ---
 
@@ -366,7 +366,7 @@ xcodebuild test -project iosApp.xcodeproj -scheme iosApp \
   -destination 'platform=iOS Simulator,name=iPhone 18 Pro'
 ```
 
-**Integración continua.** Un workflow de GitHub Actions ejecuta los tests de Kotlin (lógica compartida y tests unitarios de Android) y compila el APK de debug en cada push y pull request. Los tests de iOS todavía no forman parte de él y se ejecutan en local.
+**Integración continua.** Un workflow de GitHub Actions se ejecuta en cada push y pull request: los tests de Kotlin (lógica compartida y tests unitarios de Android), la compilación del APK de debug, una build de release con R8 activado solo en esa ejecución (para comprobar que la minificación compila; la app en sí sigue sin minificar) y los tests unitarios de iOS en macOS. Los tests de UI de iOS no forman parte de él y se ejecutan en local.
 
 ---
 
